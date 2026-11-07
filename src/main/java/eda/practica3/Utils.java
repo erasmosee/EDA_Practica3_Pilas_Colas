@@ -1,4 +1,4 @@
-package eda.practica2;
+package eda.practica3;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,7 +11,7 @@ import java.util.Properties;
 
 public class Utils {
 
-    private static final int NIVEL_INFO = 9;
+    private static final int NIVEL_INFO = 0;
     private static final boolean MOSTRAR_TAG = false;
     private static long contadorComplejidad;
     private static final Map<String, Integer> nivelesTags = new HashMap<>();

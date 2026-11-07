@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>java.eda</groupId>
-    <artifactId>practica2</artifactId>
+    <artifactId>practica3</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
-        <exec.mainClass>eda.practica2.PruebaOrderedDoubleLinkedList</exec.mainClass>
+        <exec.mainClass>eda.practica3.PruebaListasColas</exec.mainClass>
     </properties>
     <dependencies>
         <dependency>
@@ -35,7 +35,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>eda.practica2.PruebaOrderedDoubleLinkedList</mainClass>
+                            <mainClass>eda.practica3.PruebaListasColas</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

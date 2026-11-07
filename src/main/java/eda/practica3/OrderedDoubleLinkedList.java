@@ -1,7 +1,4 @@
-package eda.practica2;
-
-import eda.practica2.extras.Actor;
-import eda.practica2.extras.Pelicula;
+package eda.practica3;
 
 public class OrderedDoubleLinkedList<T extends Comparable<T>> extends DoubleLinkedList<T> implements OrderedListADT<T> {
 

@@ -1,4 +1,4 @@
-package eda.practica2.extras;
+package eda.practica3;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,12 +7,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
 
-import eda.practica2.OrderedDoubleLinkedList;
-import eda.practica2.Utils;
 
 public class LectorPeliculasActores {
 
-    public int leerCarpeta(String rutaCarpeta, OrderedDoubleLinkedList<Actor> listaActores, OrderedDoubleLinkedList<Pelicula> listaPeliculas,int tamanioLote) throws IOException {
+    public void leerCarpeta(String rutaCarpeta, OrderedDoubleLinkedList<Actor> listaActores, OrderedDoubleLinkedList<Pelicula> listaPeliculas,int tamanioLote) throws IOException {
         File carpeta = new File(rutaCarpeta);
         File[] ficheros = carpeta.listFiles();
         Utils.traza("leerCarpeta", "leer carpeta inicio");
@@ -29,10 +27,7 @@ public class LectorPeliculasActores {
         }
         Collections.sort(ficherosTxt);
 
-        int registrosLeidos = 0;
-        int registrosAntLeidos;
         // le pongo 10 porque no quiero recorrer los 54 ficheros a cada prueba
-        long tiempoCarpeta = Utils.iniciarCronometro();
 
         for (int i = 0; i < ficherosTxt.size(); i++) {
             File fichero = ficherosTxt.get(i);
@@ -41,33 +36,21 @@ public class LectorPeliculasActores {
             OrderedDoubleLinkedList<Actor> actoresDelFichero = new OrderedDoubleLinkedList<>();
             OrderedDoubleLinkedList<Pelicula> peliculasDelFichero = new OrderedDoubleLinkedList<>();
 
-            long tiempoInicio = Utils.iniciarCronometro();
-            registrosAntLeidos = registrosLeidos;
 
-            registrosLeidos += leerFichero(fichero, actoresDelFichero, peliculasDelFichero, anioFichero,tamanioLote);
+            leerFichero(fichero, actoresDelFichero, peliculasDelFichero, anioFichero,tamanioLote);
 
             listaActores.merge(actoresDelFichero);
             listaPeliculas.merge(peliculasDelFichero);
 
-            Utils.traza("leerFicheroTamaño", "Tamaño fichero leido: " + fichero.length());
-            Utils.traza("leerFicheroRegistros", "Registros leidos: " + (registrosLeidos - registrosAntLeidos));
-            Utils.traza("leerFicheroListado", "Tamaño listaActores: " + listaActores.size());
-            Utils.traza("leerFicheroListado", "Tamaño listaPeliculas: " + listaPeliculas.size());
-
-            Utils.mostrarCronometro("leerFichero", tiempoInicio);
+        
         }
-        Utils.mostrarCronometro("leerCarpeta", tiempoCarpeta);
-
-        Utils.traza("leerCarpeta", "Lectura de carpeta terminada.");
-
-        return registrosLeidos;
+      
     }
 
-    private int leerFichero(File fichero, OrderedDoubleLinkedList<Actor> actoresDelFichero, OrderedDoubleLinkedList<Pelicula> peliculasDelFichero, int anioFichero,int tamanioLote) throws IOException {
+    private void leerFichero(File fichero, OrderedDoubleLinkedList<Actor> actoresDelFichero, OrderedDoubleLinkedList<Pelicula> peliculasDelFichero, int anioFichero,int tamanioLote) throws IOException {
         OrderedDoubleLinkedList<Actor> actoresLote = new OrderedDoubleLinkedList<>();
         OrderedDoubleLinkedList<Pelicula> peliculasLote = new OrderedDoubleLinkedList<>();
         int registrosEnLote = 0;
-        int registrosLeidos = 0;
         int numeroLinea = 0;
 
         try (Scanner entrada = new Scanner(fichero, StandardCharsets.UTF_8)) {
@@ -98,7 +81,6 @@ public class LectorPeliculasActores {
 
                 actor.getPeliculaLinkedList().addToFront(pelicula);
                 pelicula.getActorLinkedList().addToFront(actor);
-                registrosLeidos++;
                 registrosEnLote++;
                 if ( registrosEnLote == tamanioLote) {
 
@@ -115,7 +97,6 @@ public class LectorPeliculasActores {
                 peliculasDelFichero.merge(peliculasLote);
             }
         }
-        return registrosLeidos;
     }
 
     private String extraerId(String texto) {
