@@ -22,6 +22,8 @@ public class PruebaListasColas {
         }
 
         ejecutarPrueba(ruta, actores, peliculas);
+
+        
         Utils.mostrarCronometro("programa", tiempoPrograma);
         Utils.traza("programa", "fin programa");
     }

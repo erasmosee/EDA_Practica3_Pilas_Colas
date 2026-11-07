@@ -75,7 +75,7 @@ public final class Actor implements Comparable<Actor> {
 
     @Override
     public int compareTo(Actor arg0) {
-        //return name.compareToIgnoreCase(arg0.name);   
+        // return name.compareToIgnoreCase(arg0.name);
         Utils.incrementarContadorcomparaciones();
         return id.compareTo(arg0.id);
     }
@@ -102,11 +102,29 @@ public final class Actor implements Comparable<Actor> {
      * @param otro actor cuyas películas se incorporan a este actor
      */
     public void combinarCon(Actor otro) {
-        
+
         for (Pelicula pelicula : otro.getPeliculaLinkedList()) {
             Pelicula peliculaDelActor = peliculaLinkedList.findOrAdd(pelicula);
             peliculaDelActor.getActorLinkedList().findOrAdd(this);
         }
+    }
+
+    public static Actor buscarPorId(OrderedDoubleLinkedList<Actor> actores, String id) {
+        for (Actor actor : actores) {
+            if (actor.getId().equals(id)) {
+                return actor;
+            }
+        }
+        return null;
+    }
+
+    public static Actor buscarPorNombre(OrderedDoubleLinkedList<Actor> actores, String nombre) {
+        for (Actor actor : actores) {
+            if (actor.getName().equals(nombre)) {
+                return actor;
+            }
+        }
+        return null;
     }
 
 } // end Actor
