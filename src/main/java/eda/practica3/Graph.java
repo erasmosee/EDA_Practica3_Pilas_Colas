@@ -4,12 +4,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Iterator;
+
+import eda.practica3.procesador.Actor;
+import eda.practica3.procesador.OrderedDoubleLinkedList;
+import eda.practica3.procesador.Pelicula;
 
 public class Graph {
 
     HashMap<String, Integer> th;
+    HashMap<String, Integer> thId;
     String[] keys;
+    String[] keysId;
     ArrayList<Integer>[] adjList;
 
     public void crearGrafo(OrderedDoubleLinkedList<Pelicula> peliculas) {
@@ -17,28 +22,37 @@ public class Graph {
         // Los nodos son nombres de actores/actrices
 
         // Paso 1: llenar “th”
-        th = new HashMap<>();
+        th = new HashMap<>(); // No se porque le llaman th pero vamos a duplicarlo porque para ir probando
+                              // todavia no se que es mejor si darles nuevos "id" del 0 a n o usar sus propios
+                              // id.
+        thId = new HashMap<>(); // No se porque le llaman th pero vamos a duplicarlo porque para ir probando
+                                // todavia no se que es mejor si darles nuevos "id" del 0 a n o usar sus propios
+                                // id.
 
-        Iterator<Pelicula> itPeliculas = peliculas.iterator();
-        while (itPeliculas.hasNext()) {
-            Pelicula pelicula = itPeliculas.next();
+        for (Pelicula pelicula : peliculas) {
+            for (Actor actor : pelicula.getActorLinkedList()) {
 
-            Iterator<Actor> itActores = pelicula.getActorLinkedList().iterator();
-            while (itActores.hasNext()) {
-                Actor actor = itActores.next();
-                String id = actor.getId();
+                Integer idActor = Integer.valueOf(actor.getId().replaceAll("\\D", "")); // Limpiamos la cadena por si
+                                                                                        // nos viene con la Q
+                String nombreActor = actor.getName();
 
-                if (!th.containsKey(id)) {
-                    th.put(id, th.size());
+                if (!th.containsKey(nombreActor)) {
+                    th.put(nombreActor, th.size()); // podemos guardar los actores con valores del 0 a n
+                    thId.put(nombreActor, idActor); // podemos guardar los actores con su id en formato numerico
                 }
             }
         }
 
         // Paso 2: llenar “keys”
         keys = new String[th.size()];
-        for (String k : th.keySet())
+        for (String k : th.keySet()) {
             keys[th.get(k)] = k;
+        }
 
+        keysId = new String[thId.size()];
+        for (String k : thId.keySet()) {
+            keysId[th.get(k)] = k;
+        }
         // Paso 3: llenar “adjList”
         // COMPLETAR CÓDIGO
     }

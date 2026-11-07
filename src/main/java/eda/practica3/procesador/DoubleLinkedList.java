@@ -1,4 +1,4 @@
-package eda.practica3;
+package eda.practica3.procesador;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

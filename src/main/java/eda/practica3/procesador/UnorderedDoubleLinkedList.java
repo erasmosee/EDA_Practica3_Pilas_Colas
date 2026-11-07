@@ -1,4 +1,4 @@
-package eda.practica3;
+package eda.practica3.procesador;
 
 public class UnorderedDoubleLinkedList<T> extends DoubleLinkedList<T> implements UnorderedListADT<T> {
 

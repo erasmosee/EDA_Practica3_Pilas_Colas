@@ -1,4 +1,4 @@
-package eda.practica3;
+package eda.practica3.procesador;
 
 import java.io.IOException;
 import java.io.InputStream;

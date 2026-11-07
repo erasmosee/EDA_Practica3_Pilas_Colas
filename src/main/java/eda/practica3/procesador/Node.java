@@ -1,4 +1,4 @@
-package eda.practica3;
+package eda.practica3.procesador;
 
 @Deprecated 
 public class Node<T> {

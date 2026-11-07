@@ -1,8 +1,8 @@
-package eda.practica3;
+package eda.practica3.procesador;
 
 import java.util.Iterator;
 
-public interface ListADT<T> {
+public interface ListADT<T>  extends Iterable<T> {
 
     public void setDescr(String nom);
 // Actualiza el nombre de la lista
@@ -37,6 +37,7 @@ public interface ListADT<T> {
     public int size();
 //Determina el número de elementos de la lista
 
-    public Iterator<T> iterator();
+    @Override
+    Iterator<T> iterator();
 
 }

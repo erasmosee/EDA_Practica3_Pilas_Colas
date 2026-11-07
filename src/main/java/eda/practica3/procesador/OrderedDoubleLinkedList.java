@@ -1,4 +1,4 @@
-package eda.practica3;
+package eda.practica3.procesador;
 
 public class OrderedDoubleLinkedList<T extends Comparable<T>> extends DoubleLinkedList<T> implements OrderedListADT<T> {
 
