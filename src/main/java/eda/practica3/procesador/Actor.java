@@ -1,7 +1,6 @@
 package eda.practica3.procesador;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 public final class Actor implements Comparable<Actor> {
 
@@ -103,10 +102,8 @@ public final class Actor implements Comparable<Actor> {
      * @param otro actor cuyas películas se incorporan a este actor
      */
     public void combinarCon(Actor otro) {
-        Iterator<Pelicula> it = otro.getPeliculaLinkedList().iterator();
-
-        while (it.hasNext()) {
-            Pelicula pelicula = it.next();
+        
+        for (Pelicula pelicula : otro.getPeliculaLinkedList()) {
             Pelicula peliculaDelActor = peliculaLinkedList.findOrAdd(pelicula);
             peliculaDelActor.getActorLinkedList().findOrAdd(this);
         }
