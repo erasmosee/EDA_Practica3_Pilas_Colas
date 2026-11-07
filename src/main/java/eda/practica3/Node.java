@@ -1,4 +1,4 @@
-package eda.practica2;
+package eda.practica3;
 
 @Deprecated 
 public class Node<T> {

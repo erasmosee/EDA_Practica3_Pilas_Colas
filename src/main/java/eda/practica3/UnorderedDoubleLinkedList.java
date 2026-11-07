@@ -1,4 +1,4 @@
-package eda.practica2;
+package eda.practica3;
 
 public class UnorderedDoubleLinkedList<T> extends DoubleLinkedList<T> implements UnorderedListADT<T> {
 

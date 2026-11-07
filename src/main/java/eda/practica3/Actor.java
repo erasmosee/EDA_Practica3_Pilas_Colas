@@ -1,23 +1,21 @@
-package eda.practica2.extras;
+package eda.practica3;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import eda.practica2.UnorderedDoubleLinkedList;
-import eda.practica2.Utils;
-
-public final class Pelicula implements Comparable<Pelicula> {
+public final class Actor implements Comparable<Actor> {
 
     // atributos
     private String id;
     private String name;
     private final ArrayList<Integer> anios = new ArrayList<>();
-    private UnorderedDoubleLinkedList<Actor> actorLinkedList = new UnorderedDoubleLinkedList<>();
+    private UnorderedDoubleLinkedList<Pelicula> peliculaLinkedList = new UnorderedDoubleLinkedList<>();
 
-    public Pelicula(String sId, String sName, int iAnio) { // Constructora
+    public Actor(String sId, String sName, int iAnio) { // Constructora
         id = sId;
         name = sName;
         addAnio(iAnio);
+
     }
 
     public String getId() {
@@ -57,7 +55,7 @@ public final class Pelicula implements Comparable<Pelicula> {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        Pelicula other = (Pelicula) obj;
+        Actor other = (Actor) obj;
         if (id == null) {
             if (other.id != null) {
                 return false;
@@ -77,8 +75,8 @@ public final class Pelicula implements Comparable<Pelicula> {
     }
 
     @Override
-    public int compareTo(Pelicula arg0) {
-        //return name.compareToIgnoreCase(arg0.name);
+    public int compareTo(Actor arg0) {
+        //return name.compareToIgnoreCase(arg0.name);   
         Utils.incrementarContadorcomparaciones();
         return id.compareTo(arg0.id);
     }
@@ -88,29 +86,30 @@ public final class Pelicula implements Comparable<Pelicula> {
         return name + " " + id;
     }
 
-    public UnorderedDoubleLinkedList<Actor> getActorLinkedList() {
-        return actorLinkedList;
+    public UnorderedDoubleLinkedList<Pelicula> getPeliculaLinkedList() {
+        return peliculaLinkedList;
     }
 
-    public void setActorLinkedList(UnorderedDoubleLinkedList<Actor> actorLinkedList) {
-        this.actorLinkedList = actorLinkedList;
+    public void setPeliculaLinkedList(UnorderedDoubleLinkedList<Pelicula> peliculaLinkedList) {
+        this.peliculaLinkedList = peliculaLinkedList;
     }
 
     /**
-     * <b>O(n(m + n + k))</b>: combina los actores de {@code otra} con los de
-     * esta película. {@code n} es el número de actores de {@code otra},
-     * {@code m} el número inicial de actores de esta película y {@code k} el
-     * máximo de películas asociadas a un actor.
+     * <b>O(n(m + n + k))</b>: combina las películas de {@code otro} con las de
+     * este actor. {@code n} es el número de películas de {@code otro},
+     * {@code m} el número inicial de películas de este actor y {@code k} el
+     * máximo de actores asociados a una película.
      *
-     * @param otra película cuyos actores se incorporan
+     * @param otro actor cuyas películas se incorporan a este actor
      */
-    public void combinarCon(Pelicula otra) {
-        Iterator<Actor> it = otra.getActorLinkedList().iterator();
+    public void combinarCon(Actor otro) {
+        Iterator<Pelicula> it = otro.getPeliculaLinkedList().iterator();
 
         while (it.hasNext()) {
-            Actor actor = it.next();
-            Actor actorDelaPelicula = actorLinkedList.findOrAdd(actor);
-            actorDelaPelicula.getPeliculaLinkedList().findOrAdd(this);
+            Pelicula pelicula = it.next();
+            Pelicula peliculaDelActor = peliculaLinkedList.findOrAdd(pelicula);
+            peliculaDelActor.getActorLinkedList().findOrAdd(this);
         }
     }
-} // end Pelicula
+
+} // end Actor
