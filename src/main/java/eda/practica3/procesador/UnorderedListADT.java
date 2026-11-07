@@ -1,4 +1,4 @@
-package eda.practica3;
+package eda.practica3.procesador;
 
 public interface UnorderedListADT<T> extends ListADT<T> {
 
