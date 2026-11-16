@@ -1,6 +1,7 @@
 package eda.practica3;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -114,7 +115,7 @@ public class Graph {
         while (!porExaminar.isEmpty()) {
             int actual = porExaminar.remove();
             if (destino.equals(keys[actual])) {
-                System.out.println(nombre + " esta a una distancia " + (distancia[actual]-1) + " de " + keys[actual]);
+                System.out.println(nombre + " esta a una distancia " + (distancia[actual] - 1) + " de " + keys[actual]);
             }
             if (distancia[actual] < profundidad) {
                 for (int vecino : adjList[actual]) {
@@ -128,7 +129,62 @@ public class Graph {
         }
     }
 
-    public boolean estanConectados(String a1, String a2) {
+    public ArrayList<String> estanConectados(String a1, String a2) {
+        // Usamos una cola para ir revisando los actores pendientes.
+        Queue<Integer> porExaminar = new LinkedList<>();
+        int padre[]= new int[th.size()] ;
+        // Buscamos los numeros que tienen los dos actores.
+        int pos1 = th.get(a1);
+        int pos2 = th.get(a2);
+        ArrayList<String> camino = new ArrayList();
+        boolean enc;
+        // Aqui marcamos los actores que ya hemos revisado.
+        boolean[] examinados = new boolean[th.size()];
+
+        // Si es el mismo actor, ya sabemos que estan conectados.
+        enc = pos1 == pos2;
+        // Empezamos por el primer actor.
+        examinados[pos1] = true;
+        porExaminar.add(pos1);
+
+        // Seguimos mientras queden actores en la cola y no encontremos al otro.
+        while (!porExaminar.isEmpty() && !enc) {
+            int actual = porExaminar.remove();
+
+            // Miramos con que actores ha compartido pelicula este.
+            for (int vecino : adjList[actual]) {
+                if (vecino == pos2) {
+                    enc = true;
+                    padre[vecino]= actual;
+                    break;
+                }
+
+                if (!examinados[vecino]) {
+                    // Lo marcamos para no volver a revisarlo y lo ponemos en la cola.
+                    examinados[vecino] = true;
+                    porExaminar.add(vecino);
+                    padre[vecino]= actual;
+                    
+                }
+            }
+        }
+        if (enc){
+        	
+
+        	int paso = pos2;
+        	camino.add(keys[paso]);
+        	 while (paso!=pos1) {
+        		paso = padre[paso];
+        		camino.add(keys[paso]);
+        	 }
+        	 Collections.reverse(camino);
+        }
+        // Devolvemos si hemos encontrado un camino entre los dos.
+        return camino;
+
+    }
+
+    public boolean estanConectadosBoolean(String a1, String a2) {
         // Usamos una cola para ir revisando los actores pendientes.
         Queue<Integer> porExaminar = new LinkedList<>();
 
