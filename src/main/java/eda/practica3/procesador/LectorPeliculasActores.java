@@ -27,8 +27,6 @@ public class LectorPeliculasActores {
         }
         Collections.sort(ficherosTxt);
 
-        // le pongo 10 porque no quiero recorrer los 54 ficheros a cada prueba
-
         for (int i = 0; i < ficherosTxt.size(); i++) {
             File fichero = ficherosTxt.get(i);
             Utils.traza("leerFichero", "Leyendo fichero " + (i + 1) + " de " + ficherosTxt.size() + ": " + fichero.getName() + " ");

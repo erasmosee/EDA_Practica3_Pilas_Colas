@@ -9,6 +9,7 @@
 \usepackage{listings}
 \usepackage{graphicx}
 \usepackage{tikz}
+\usepackage{xcolor}
 \usepackage{hyperref}
 \usetikzlibrary{positioning, arrows.meta, calc, shapes.multipart}
 
@@ -19,8 +20,15 @@
 \setlength{\textfloatsep}{22pt plus 4pt minus 4pt}
 
 % Bloque de coste: "Coste:" en negrita y separado del codigo y del texto siguiente
-\newcommand{\coste}[1]{\par\bigskip\noindent\textbf{Coste:} #1\par\bigskip}
+\newcommand{\coste}[1]{\par\noindent\textbf{Coste:} #1\par}
+% Especificacion y algoritmo de cada metodo
+\newcommand{\espec}[2]{\par\noindent\textbf{Precondición:} #1\par\noindent\textbf{Postcondición:} #2\par}
+\newcommand{\algoritmo}[1]{\par\noindent\textbf{Algoritmo:} #1\par}
+% Datos que solo se pueden obtener ejecutando el programa (buscar \pend antes de entregar)
+\newcommand{\pend}[1]{\textcolor{red}{\textbf{[PENDIENTE: #1]}}}
 
+% En el indice solo capitulos y secciones, para que quepa en una pagina
+\setcounter{tocdepth}{1}
 \renewcommand{\chaptername}{Capítulo}
 \renewcommand{\contentsname}{Índice}
 \renewcommand{\listtablename}{Índice de tablas}
@@ -40,270 +48,102 @@
         {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
         {ñ}{{\~n}}1
 }
-% Title Page
 
-\title{Práctica 2\\Listas doblemente enlazadas circulares}
+\title{Práctica 3\\Grafo de actores y recorrido en anchura con colas}
 \author{Samuel Carrasco Santurde\\Alexander Tomás Echevarria Pizarro\\Erasmo Seebold Guadilla}
 \date{}
-
 
 \begin{document}
 \maketitle
 \tableofcontents
 \listoftables
 
+% Espacio entre parrafos en todo el documento (tras los indices, para no separar sus entradas)
+\setlength{\parskip}{0.9em plus 0.2em minus 0.1em}
+
+% =============================================================================
 \chapter{Introducción}
 
-En esta práctica hemos implementado una estructura basada en listas enlazadas, concretamente listas doblemente enlazadas circulares.
+En esta práctica construimos, a partir de los datos de películas y actores de las prácticas 1 y 2, un grafo en el que cada actor o actriz es un nodo y dos nodos están unidos si han participado juntos en alguna película. Sobre ese grafo resolvemos la pregunta: \emph{¿hay una cadena de relaciones que una a dos actores?}
 
-A partir de la clase común \texttt{DoubleLinkedList} hemos creado una variante sin orden \texttt{UnorderedDoubleLinkedList} y otra con orden \texttt{OrderedDoubleLinkedList}.
-
-El nodo \texttt{Node<T>} guarda referencias a anterior y a siguiente, lo que nos permite recorrer la lista de manera bidireccional conectando el primero con el último.
-
-La lista ordenada tiene la restricción de que ha de implementar elementos que implementen \texttt{Comparable<T>}, mientras que la no ordenada tiene más libertad en cuanto a los elementos que almacena.
-
-Se han realizado pruebas tanto con enteros y con objetos \texttt{Persona} para finalmente implementarlo en la práctica 1 de Actores y películas.
-
+La búsqueda se hace con un recorrido en anchura apoyado en una cola (\texttt{Queue}), que es la estructura que se estudia en esta actividad. Por ejemplo, entre \textit{Brad Pitt} y \textit{Cate Blanchett} hay conexión porque \textit{Brad Pitt} ha trabajado con \textit{Julia Roberts} y esta con \textit{Cate Blanchett}.
 
 \section{Objetivos y alcance}
 
-Los objetivos principales son:
 \begin{itemize}
-    \item Especificar, diseñar e implementar en Java los métodos de las clases \texttt{DoubleLinkedList} y \texttt{UnorderedDoubleLinkedList}.
-    \item Programa de pruebas diseñado y complejidad de cada método.
-    \item Sustituir la nueva clase \texttt{UnorderedDoubleLinkedList} en alguna de las listas usadas en la fase 1 de la práctica, y comprobar que funciona correctamente (por ejemplo, en la lista de actores que participan en una película)
-    \item Implementación de la clase \texttt{OrderedDoubleLinkedList} es opcional
+    \item Implementar la operación que indica si existe una cadena de relaciones entre dos actores (método \texttt{estanConectadosBoolean}).
+    \item Implementar la parte opcional: obtener la lista de actores que forman esa cadena (método \texttt{estanConectados}, que devuelve un \texttt{ArrayList<String>}).
+    \item Usar la estructura de datos propuesta: \texttt{HashMap<String, Integer> th}, \texttt{String[] keys} y \texttt{ArrayList<Integer>[] adjList}.
+    \item Demostrar que funciona procesando el conjunto de datos completo y medir cuántas llamadas se calculan por minuto.
+    \item Documentar el problema, las alternativas examinadas, la implementación y la eficiencia.
 \end{itemize}
 
-Por lo que hemos agregado comentarios a los métodos indicando su complejidad, hemos preparado unos Junits para probar las funcionalidades de \texttt{DoubleLinkedList}, \texttt{UnorderedDoubleLinkedList} y \texttt{OrderedDoubleLinkedList}.
-Hemos implementado las listas ordenadas en el proyecto de la práctica 1 para las listas generales de actores y películas, y hemos dejado las listas no ordenadas para las listas de películas de cada actor y las listas de actores de cada película.
+La parte opcional está implementada, por lo que se opta a la nota máxima.
 
+\section{Punto de partida: la práctica 2}
+
+Esta práctica se ha construido sobre el proyecto de la práctica 2, del que se parte tal cual y al que se añade el grafo. De la práctica 2 se reutilizan:
+
+\begin{itemize}
+    \item \textbf{Las listas doblemente enlazadas circulares}: \texttt{DoubleLinkedList}, \texttt{Unordered\allowbreak Double\allowbreak Linked\allowbreak List} y \texttt{Ordered\allowbreak Double\allowbreak Linked\allowbreak List}, con sus interfaces \texttt{ListADT}, \texttt{Unordered\allowbreak ListADT} y \texttt{OrderedListADT}.
+    \item \textbf{El modelo de datos}: las clases \texttt{Actor} y \texttt{Pelicula}, en las que cada actor guarda la lista no ordenada de sus películas y cada película la de sus actores.
+    \item \textbf{El lector de ficheros} \texttt{LectorPeliculasActores}, que carga los ficheros por lotes de 128 registros (el tamaño de lote con el que obtuvimos menos comparaciones y menor tiempo en la práctica 2) y los combina con el \texttt{merge} de la lista ordenada.
+    \item \textbf{La clase \texttt{Utils}}: trazas, cronómetros, contador de comparaciones y lectura de \texttt{config.properties}.
+\end{itemize}
+
+Gracias a esto, la lista de películas con sus actores ya está cargada y ordenada cuando se construye el grafo, y esta práctica se centra en lo nuevo: la clase \texttt{Graph} y el recorrido en anchura con la cola. El diseño, las pruebas y los costes de las clases reutilizadas están documentados en la memoria de la práctica 2 y no se repiten aquí.
+
+\section{Notación de costes}
+En los costes se usa la siguiente notación:
+\begin{itemize}
+    \item $V$: número de actores distintos (nodos del grafo).
+    \item $E$: número de relaciones distintas entre actores (aristas).
+    \item $P$: número de películas.
+    \item $K$: número máximo de actores en una misma película.
+    \item $g$: grado máximo del grafo, es decir, el mayor número de compañeros de reparto de un actor.
+\end{itemize}
+Las operaciones de \texttt{HashMap} (\texttt{get}, \texttt{put}, \texttt{containsKey}) se consideran $O(1)$ en media.
+
+% =============================================================================
 \chapter{Diseño de las clases}
-En esta sección se mencionarán las clases principales planteadas para la solución al problema. Por cada clase, se presentarán sus características, atributos y métodos, especificando por cada uno sus propiedades (visibilidad, parámetros, tipo de los resultados\ldots).
-En la siguiente figura se muestran las clases y sus relaciones.
+
+Como se ha indicado en la introducción, la práctica 3 se basa en la práctica 2 y reutiliza su modelo de datos, sus listas y su lector (\texttt{Actor}, \texttt{Pelicula}, \texttt{Double\allowbreak Linked\allowbreak List}, \texttt{Unordered\allowbreak Double\allowbreak Linked\allowbreak List}, \texttt{Ordered\allowbreak Double\allowbreak Linked\allowbreak List} y \texttt{Lector\allowbreak Peliculas\allowbreak Actores}). La clase nueva es \texttt{Graph}, que recibe la lista de películas ya cargada y construye el grafo. El diagrama detallado de las listas está en la memoria de la práctica 2; aquí se muestran las clases que intervienen en esta actividad.
+
+En el diagrama, la visibilidad se indica con $+$ (público), $-$ (privado), $*$ (protegido) y $\sim$ (paquete).
 
 \begin{figure}[htbp]
 \centering
 \resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
     font=\small\sffamily,
-    % Estilo de las clases UML
     umlclass/.style={
-        rectangle split,
-        rectangle split parts=3,
-        draw=black,
-        rounded corners=1pt,
-        fill=blue!3,
-        text width=7.2cm,
-        align=left,
-        inner sep=4pt
+        rectangle split, rectangle split parts=3,
+        draw=black, rounded corners=1pt, fill=blue!3,
+        text width=7.6cm, align=left, inner sep=4pt
     },
-    % Estilo para interfaces UML
-    umlinterface/.style={
-        rectangle split,
-        rectangle split parts=3,
-        draw=black,
-        rounded corners=1pt,
-        fill=green!4,
-        text width=7.2cm,
-        align=left,
-        inner sep=4pt
-    },
-    % Estilo para notas / aclaraciones UML
     umlnote/.style={
-        draw=black!70,
-        dashed,
-        fill=yellow!10,
-        text width=7.2cm,
-        align=left,
-        inner sep=6pt,
-        rounded corners=2pt,
-        font=\footnotesize\sffamily
+        draw=black!70, dashed, fill=yellow!10, text width=7.6cm,
+        align=left, inner sep=6pt, rounded corners=2pt, font=\footnotesize\sffamily
     },
-    % Estilos de flechas UML estándar
-    generalization/.style={-{Triangle[open, length=8pt, width=6pt]}, thick},
-    realization/.style={-{Triangle[open, length=8pt, width=6pt]}, dashed, thick},
-    association/.style={-{Latex[length=6pt, width=4pt]}, thick},
-    composition/.style={-{Diamond[fill=black, length=8pt, width=5pt]}, thick}
+    dependency/.style={-{Latex[length=6pt, width=4pt]}, dashed, thick}
 ]
 
-% ==============================================================================
-% COLUMNA CENTRAL: JERARQUÍA BASE
-% ==============================================================================
-
-% Interfaz ListADT
-\node[umlinterface] (ListADT) at (0, 16) {
-    \centering \guillemotleft interface\guillemotright \\ \textbf{ListADT\textless T\textgreater}
+\node[umlclass] (Graph) at (0,0) {
+    \centering \textbf{Graph}
     \nodepart{second}
-    \textit{(sin atributos)}
+    $\sim$ th: HashMap\textless String, Integer\textgreater \\
+    $\sim$ keys: String[] \\
+    $\sim$ adjList: ArrayList\textless Integer\textgreater[]
     \nodepart{third}
-    $+$ setDescr(nom: String): void \\
-    $+$ getDescr(): String \\
-    $+$ removeFirst(): T \\
-    $+$ removeLast(): T \\
-    $+$ remove(elem: T): T \\
-    $+$ first(): T \\
-    $+$ last(): T \\
-    $+$ contains(elem: T): boolean \\
-    $+$ find(elem: T): T \\
-    $+$ isEmpty(): boolean \\
-    $+$ size(): int \\
-    $+$ iterator(): Iterator\textless T\textgreater
+    $+$ crearGrafo(peliculas: OrderedDoubleLinkedList\textless Pelicula\textgreater): void \\
+    $+$ print(): void \\
+    $+$ print(nombre: String, destino: String, profundidad: int): void \\
+    $+$ estanConectados(a1: String, a2: String): ArrayList\textless String\textgreater \\
+    $+$ estanConectadosBoolean(a1: String, a2: String): boolean \\
+    $-$ identificador(nombre: String): int
 };
 
-% Clase principal: DoubleLinkedList
-\node[umlclass, below=1.8cm of ListADT] (DoubleLinkedList) {
-    \centering \textbf{DoubleLinkedList\textless T\textgreater}
-    \nodepart{second}
-    $*$ first: Node\textless T\textgreater \\
-    $*$ descr: String \\
-    $*$ count: int
-    \nodepart{third}
-    $+$ DoubleLinkedList() \\
-    $+$ setDescr(nom: String): void \\
-    $+$ getDescr(): String \\
-    $+$ removeFirst(): T \\
-    $+$ removeLast(): T \\
-    $*$ locate(elem: T): Node\textless T\textgreater \\
-    $+$ remove(elem: T): T \\
-    $+$ first(): T \\
-    $+$ last(): T \\
-    $+$ contains(elem: T): boolean \\
-    $+$ find(elem: T): T \\
-    $+$ addWhenEmpty(elem: T): void \\
-    $+$ insertFirst(elem: T): void \\
-    $+$ isEmpty(): boolean \\
-    $+$ isAlone(): boolean \\
-    $+$ actualizarFirst(node: Node\textless T\textgreater): void \\
-    $+$ size(): int \\
-    $+$ iterator(): Iterator\textless T\textgreater \\
-    $+$ insertAdd(elem: T, prev: Node\textless T\textgreater, next: Node\textless T\textgreater): void \\
-    $+$ visualizarNodos(): void \\
-    $+$ toString(): String
-};
-
-% ==============================================================================
-% COLUMNA IZQUIERDA: Listas Desordenadas (Alineada por el título superior con DoubleLinkedList)
-% ==============================================================================
-
-\node[umlinterface, left=2.5cm of DoubleLinkedList.north west, anchor=north east] (UnorderedListADT) {
-    \centering \guillemotleft interface\guillemotright \\ \textbf{UnorderedListADT\textless T\textgreater}
-    \nodepart{second}
-    \textit{(sin atributos)}
-    \nodepart{third}
-    $+$ addToFront(elem: T): void \\
-    $+$ addToRear(elem: T): void \\
-    $+$ addAfter(elem: T, target: T): void
-};
-
-\node[umlclass, below=1.7cm of UnorderedListADT] (UnorderedDoubleLinkedList) {
-    \centering \textbf{UnorderedDoubleLinkedList\textless T\textgreater}
-    \nodepart{second}
-    \textit{(sin atributos propios)}
-    \nodepart{third}
-    $-$ addToTo(elem: T, front: boolean): void \\
-    $+$ findOrAdd(elem: T): T \\
-    $+$ addToFront(elem: T): void \\
-    $+$ addToRear(elem: T): void \\
-    $+$ addAfter(elem: T, target: T): void
-};
-
-% ==============================================================================
-% COLUMNA DERECHA: Listas Ordenadas (Alineada por el título superior con DoubleLinkedList)
-% ==============================================================================
-
-\node[umlinterface, right=2.5cm of DoubleLinkedList.north east, anchor=north west] (OrderedListADT) {
-    \centering \guillemotleft interface\guillemotright \\ \textbf{OrderedListADT\textless T\textgreater}
-    \nodepart{second}
-    \textit{(sin atributos)}
-    \nodepart{third}
-    $+$ add(elem: T): void \\
-    $+$ merge(zerrenda: DoubleLinkedList\textless T\textgreater): void
-};
-
-\node[umlclass, below=1.1cm of OrderedListADT] (OrderedDoubleLinkedList) {
-    \centering \textbf{OrderedDoubleLinkedList\textless T extends Comparable\textless T\textgreater\textgreater}
-    \nodepart{second}
-    \textit{(sin atributos propios)}
-    \nodepart{third}
-    $+$ add(elem: T): void \\
-    $+$ findOrAdd(elem: T): T \\
-    $+$ merge(lista: DoubleLinkedList\textless T\textgreater): void \\
-    $-$ combinarIguales(actual: T, entrante: T): void
-};
-
-% Nota / Disclaimer situada directamente debajo de OrderedDoubleLinkedList
-\node[umlnote, below=1.2cm of OrderedDoubleLinkedList] (Disclaimer) {
-    \textbf{Nota / Alcance del diagrama:} \\
-    Para que haya más claridad hemos omitido aquellas clases destinadas exclusivamente a hacer pruebas:
-    \begin{itemize}
-        \item \textbf{Tests (\texttt{src/test}):} \\
-        \texttt{OrderedDoubleLinkedListTest}, \\
-        \texttt{UnorderedDoubleLinkedListTest}, \\
-        \texttt{LectorPeliculasActoresTest}.
-        \item \textbf{Ejecutables (\texttt{src/main}):} \\
-        \texttt{PruebaOrderedDoubleLinkedList}, \\
-        \texttt{PruebaUnorderedDoubleLinkedList}, \\
-        \texttt{PruebaPeliculasActoresLinkedList}.
-    \end{itemize}
-};
-
-% ==============================================================================
-% CLASES INTERNAS DE DoubleLinkedList
-% ==============================================================================
-
-\node[umlclass, below=1.5cm of DoubleLinkedList, text width=6.2cm] (NodeInternal) {
-    \centering \textbf{DoubleLinkedList\$Node\textless N\textgreater}
-    \nodepart{second}
-    $*$ data: N \\
-    $*$ prev: Node\textless N\textgreater \\
-    $*$ next: Node\textless N\textgreater
-    \nodepart{third}
-    $*$ Node(dd: N) \\
-    $+$ Node(dd: N, prev: Node\textless N\textgreater, next: Node\textless N\textgreater)
-};
-
-\node[umlclass, left=1.2cm of NodeInternal, text width=5.5cm] (ListIterator) {
-    \centering \textbf{DoubleLinkedList\$ListIterator}
-    \nodepart{second}
-    $-$ aux: Node\textless T\textgreater \\
-    $-$ contador: int
-    \nodepart{third}
-    $+$ hasNext(): boolean \\
-    $+$ next(): T
-};
-
-% ==============================================================================
-% MODELO DE DATOS: ACTOR Y PELÍCULA (Espacio ampliado)
-% ==============================================================================
-
-% Actor situado ligeramente desplazado a la izquierda respecto al centro
-\node[umlclass, below=1.8cm of NodeInternal, xshift=-4.8cm, text width=8.5cm] (Actor) {
-    \centering \textbf{Actor}
-    \nodepart{second}
-    $-$ id: String \\
-    $-$ name: String \\
-    $-$ anios: ArrayList\textless Integer\textgreater \\
-    $-$ peliculaLinkedList: UnorderedDoubleLinkedList\textless Pelicula\textgreater
-    \nodepart{third}
-    $+$ Actor(sId: String, sName: String, iAnio: int) \\
-    $+$ getId(): String \\
-    $+$ setId(sId: String): void \\
-    $+$ getName(): String \\
-    $+$ setName(name: String): void \\
-    $+$ addAnio(anio: int): void \\
-    $+$ getAnios(): ArrayList\textless Integer\textgreater \\
-    $+$ equals(obj: Object): boolean \\
-    $+$ hashCode(): int \\
-    $+$ compareTo(arg0: Actor): int \\
-    $+$ toString(): String \\
-    $+$ getPeliculaLinkedList(): UnorderedDoubleLinkedList\textless Pelicula\textgreater \\
-    $+$ setPeliculaLinkedList(lista: UnorderedDoubleLinkedList\textless Pelicula\textgreater): void \\
-    $+$ combinarCon(otro: Actor): void
-};
-
-% Película situada a la derecha con 3.5cm de separación
-\node[umlclass, right=3.5cm of Actor, text width=8.5cm] (Pelicula) {
+\node[umlclass, right=3cm of Graph.north east, anchor=north west] (Pelicula) {
     \centering \textbf{Pelicula}
     \nodepart{second}
     $-$ id: String \\
@@ -311,817 +151,704 @@ En la siguiente figura se muestran las clases y sus relaciones.
     $-$ anios: ArrayList\textless Integer\textgreater \\
     $-$ actorLinkedList: UnorderedDoubleLinkedList\textless Actor\textgreater
     \nodepart{third}
-    $+$ Pelicula(sId: String, sName: String, iAnio: int) \\
-    $+$ getId(): String \\
-    $+$ setId(sId: String): void \\
-    $+$ getName(): String \\
-    $+$ setName(name: String): void \\
-    $+$ addAnio(anio: int): void \\
-    $+$ getAnios(): ArrayList\textless Integer\textgreater \\
-    $+$ equals(obj: Object): boolean \\
-    $+$ hashCode(): int \\
-    $+$ compareTo(arg0: Pelicula): int \\
-    $+$ toString(): String \\
     $+$ getActorLinkedList(): UnorderedDoubleLinkedList\textless Actor\textgreater \\
-    $+$ setActorLinkedList(lista: UnorderedDoubleLinkedList\textless Actor\textgreater): void \\
-    $+$ combinarCon(otra: Pelicula): void
+    $+$ compareTo(arg0: Pelicula): int \\
+    $+$ \ldots
 };
 
-% ==============================================================================
-% UTILIDADES / LECTOR
-% ==============================================================================
-
-\node[umlclass, below=1.5cm of $(Actor.south)!0.5!(Pelicula.south)$, text width=9.5cm] (LectorPeliculasActores) {
-    \centering \textbf{LectorPeliculasActores}
+\node[umlclass, below=1.6cm of Pelicula] (Actor) {
+    \centering \textbf{Actor}
     \nodepart{second}
-    \textit{(sin atributos)}
+    $-$ id: String \\
+    $-$ name: String \\
+    $-$ anios: ArrayList\textless Integer\textgreater \\
+    $-$ peliculaLinkedList: UnorderedDoubleLinkedList\textless Pelicula\textgreater
     \nodepart{third}
-    $+$ leerCarpeta(ruta: String, listaA: OrderedDoubleLinkedList\textless Actor\textgreater, listaP: OrderedDoubleLinkedList\textless Pelicula\textgreater, lote: int): int \\
-    $-$ leerFichero(f: File, listaA: OrderedDoubleLinkedList\textless Actor\textgreater, listaP: OrderedDoubleLinkedList\textless Pelicula\textgreater, anio: int, lote: int): int \\
-    $-$ extraerId(texto: String): String
+    $+$ getName(): String \\
+    $+$ getPeliculaLinkedList(): UnorderedDoubleLinkedList\textless Pelicula\textgreater \\
+    $+$ compareTo(arg0: Actor): int \\
+    $+$ \ldots
 };
 
-% ==============================================================================
-% RELACIONES / FLECHAS
-% ==============================================================================
+\node[umlclass, below=1.6cm of Graph] (Prueba) {
+    \centering \textbf{PruebaListasColas}
+    \nodepart{second}
+    $-$ SEMILLA: long
+    \nodepart{third}
+    $+$ main(args: String[]): void \\
+    $-$ ejecutarPrueba(ruta: String, actores: OrderedDoubleLinkedList\textless Actor\textgreater, peliculas: OrderedDoubleLinkedList\textless Pelicula\textgreater): void \\
+    $-$ contarRelaciones(grafo: Graph): long \\
+    $-$ medirLlamadas(grafo: Graph, segundos: int, conCamino: boolean): void
+};
 
-% Realizaciones (implementación de interfaces)
-\draw[realization] (DoubleLinkedList) -- (ListADT);
-\draw[realization] (UnorderedDoubleLinkedList) -- (UnorderedListADT);
-\draw[realization] (OrderedDoubleLinkedList) -- (OrderedListADT);
+\node[umlnote, below=1.6cm of Actor] (Nota) {
+    \textbf{Nota:} las listas (\texttt{DoubleLinkedList}, \texttt{UnorderedDoubleLinkedList}, \texttt{OrderedDoubleLinkedList}), \texttt{LectorPeliculasActores} y \texttt{Utils} son las de la práctica 2 y no se vuelven a detallar. Se omite la clase de pruebas \texttt{GraphTest}.
+};
 
-% Herencia de interfaces
-\draw[generalization] (UnorderedListADT) |- (ListADT);
-\draw[generalization] (OrderedListADT) |- (ListADT);
-
-% Herencia entre clases: conectando al centro izquierdo y centro derecho de DoubleLinkedList
-\draw[generalization] (UnorderedDoubleLinkedList.east) |- (DoubleLinkedList.west);
-\draw[generalization] (OrderedDoubleLinkedList.west) |- (DoubleLinkedList.east);
-
-% Composición de clases internas
-\draw[composition] (DoubleLinkedList) -- (NodeInternal);
-\draw[composition] (DoubleLinkedList.south west) -- (ListIterator.north);
-
-% Asociación bidireccional entre Actor y Pelicula (doble rombo abierto)
-\draw[{Diamond[open, length=8pt, width=5pt]}-{Diamond[open, length=8pt, width=5pt]}, thick] (Actor.east) -- (Pelicula.west);
+\draw[dependency] (Prueba.north) -- node[right, font=\footnotesize] {crea y consulta} (Graph.south);
+\draw[dependency] (Graph.east |- Pelicula.west) -- node[above, font=\footnotesize] {usa (recorre actores)} (Pelicula.west);
+\draw[{Diamond[open, length=8pt, width=5pt]}-{Diamond[open, length=8pt, width=5pt]}, thick] (Pelicula.south) -- (Actor.north);
 
 \end{tikzpicture}%
 }
-\caption{Diagrama de clases.}
+\caption{Diagrama de clases de la práctica 3.}
 \label{fig:diagramaClases}
 \end{figure}
 
+% =============================================================================
 \chapter{Descripción de las estructuras de datos principales}
 
-Sobre las listas doblemente enlazadas, podemos afirmar que si la lista está vacía, no hay ningún nodo, por lo que \texttt{first == null} y el contador vale cero \texttt{count == 0}. En caso de tener elementos cada nodo desde el primero apuntará tanto al siguiente como al anterior, de manera que el último es accesible desde el primero y el primero desde el último formando un círculo.
-En los casos en los que solo hay un nodo, este se apuntará a sí mismo. El contador nos permite saber el número de elementos de manera directa \texttt{O(1)} sin tener que recorrer toda la lista contando elementos, a coste de que cada vez que añadimos o quitamos un elemento de la lista agregar una modificación al contador.
-Cada vez que se añade o se retira un elemento de la lista, hay que actualizar los enlaces del elemento nuevo y de los elementos que rodean al nuevo elemento para que no se rompa la lista.
+\section{Representación del grafo}
 
-\chapter{Diseño e implementación de los métodos principales}
+Se usa la representación propuesta en el enunciado, similar al tipo \texttt{Graph} de Sedgewick y Wayne:
 
-A continuación se presentan los métodos principales de las listas, con su código y el coste de cada uno. En los costes, $n$ es el número de elementos de la lista y comparar dos elementos cuesta $O(1)$. Los métodos \texttt{isEmpty}, \texttt{size}, \texttt{isAlone}, \texttt{first}, \texttt{last} y \texttt{addWhenEmpty} hacen un número fijo de operaciones $\Rightarrow O(1)$.
-
-
-\bigskip
-\begin{minipage}{0.95\linewidth}
-\section{\label{isEmpty}isEmpty}
-\begin{lstlisting}[language=Java]
-  //comprueba si la lista está vacía.
-  public boolean isEmpty() {return first == null;} 
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{size}size}
-\begin{lstlisting}[language=Java]
-  //devuelve el número de elementos de la lista.
-  public int size() {return count;} 
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{isAlone}isAlone}
-\begin{lstlisting}[language=Java]
-  //comprueba si la lista contiene un único nodo.
-  public boolean isAlone() {return first == first.next;}
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{locate}locate}
-\begin{lstlisting}[language=Java]
-  //busca el nodo cuyo dato es igual a {@code elem}.
-  protected Node<T> locate(T elem) {
-    if (isEmpty()) {return null;}
-    Node<T> aux = first;
-    do {
-      if (Objects.equals(elem, aux.data)) {return aux;}
-      aux = aux.next;
-    } while (aux != first);
-    return null;
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{mejor caso (es el primero): 1 comparación $\Rightarrow O(1)$. Peor caso (no está o es el último): $n$ comparaciones de coste constante $\Rightarrow O(n)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{removeFirst}removeFirst}
-\begin{lstlisting}[language=Java]
-  //Elimina el primer nodo, actualiza {@code first} y los enlaces entre el nuevo primero y el último.
-  public T removeFirst() {
-    Node<T> aux;
-    if (isEmpty()) {
-      throw new NoSuchElementException();
-    } else {
-      aux = first;
-      if (isAlone()) {
-        first = null;
-      } else {
-        first.prev.next = first.next;
-        first.next.prev = first.prev;
-        first = first.next;
-      }
-      count--;
-    }
-    return aux.data;
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\coste{sin recorridos, solo comprobaciones y un número fijo de asignaciones $\Rightarrow O(1)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{removeLast}removeLast}
-\begin{lstlisting}[language=Java]
-  //Elimina el último nodo y actualiza los enlaces entre el nuevo último y {@code first}.
-  public T removeLast() {
-    Node<T> aux;
-    if (isEmpty()) {
-      throw new NoSuchElementException();
-    } else {
-        aux = first.prev;
-        if (isAlone()) {
-          first = null;
-        } else {
-          first.prev.prev.next = first;
-          first.prev = first.prev.prev;
-        }
-        count--;
-    }
-    return aux.data;
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\coste{el último es \texttt{first.prev} (lista circular), así que no hay recorrido $\Rightarrow O(1)$. En una lista simple sería $O(n)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{remove}remove}
-\texttt{remove} se apoya en \ref{locate} \texttt{locate}
-\begin{lstlisting}[language=Java]
-  //Busca y elimina el primer elemento igual a {@code elem}, actualizando los enlaces de sus nodos vecinos.
-  public T remove(T elem) {
-    if (isEmpty()) {throw new NoSuchElementException();}
-
-    Node<T> aux = locate(elem);
-    if (aux == null) {return null;}
-    if (aux == first) {return removeFirst();}
-
-    aux.prev.next = aux.next;
-    aux.next.prev = aux.prev;
-    count--;
-
-    return aux.data;
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\coste{se busca con \texttt{locate} y se enlazan los vecinos: $O(n) + O(1) = O(n)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{first}first}
-\begin{lstlisting}[language=Java]
-  //Devuelve el primer elemento
-  public T first() {
-    if (isEmpty()) {
-      throw new NoSuchElementException();
-    } else {
-      return first.data;
-    }
-  }  
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{last}last}
-\begin{lstlisting}[language=Java]
-  //Devuelve el último elemento
-  public T last() {
-    if (isEmpty()) {
-      throw new NoSuchElementException();
-    } else {
-      return first.prev.data;
-    }
-  }  
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{contains}contains}
-\texttt{contains} se apoya en \ref{locate} \texttt{locate}
-\begin{lstlisting}[language=Java]
-  //Comprueba si la lista contiene un elemento igual a {@code elem}
-  public boolean contains(T elem) {
-    Node<T> aux;
-    if (isEmpty()) {
-      return false;
-    } else {
-      aux = locate(elem);
-      if (aux != null) {
-        return Objects.equals(aux.data, elem);
-      } else {
-        return false;
-      }
-    }
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\coste{solo llama a \texttt{locate} $\Rightarrow O(n)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{find}find}
-\texttt{find} se apoya en \ref{locate} \texttt{locate}
-\begin{lstlisting}[language=Java]
-    public T find(T elem) {
-        Node<T> aux;
-        if (isEmpty()) {
-            return null;
-        } else {
-            aux = locate(elem);
-            if (aux == null) {
-                return null;
-            }
-            if (Objects.equals(aux.data, elem)) {
-                return aux.data;
-            } else {
-                return null;
-            }
-        }
-    }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{igual que \texttt{contains}, solo depende de \texttt{locate} $\Rightarrow O(n)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{addWhenEmpty}addWhenEmpty}
-\begin{lstlisting}[language=Java]
-  //Crea el único nodo de la lista vacía y enlaza sus referencias {@code next} y {@code prev} consigo mismo.
-  public void addWhenEmpty(T elem) {
-    Node<T> newNode = new Node<>(elem);
-    newNode.next = newNode;
-    newNode.prev = newNode;
-    first = newNode;
-    count++;
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{insertAdd}insertAdd}
-\texttt{insertAdd} inserta entre dos nodos que ya recibe, por lo que no recorre la lista.
-\begin{lstlisting}[language=Java]
-  //Inserta {@code elem} entre los nodos {@code prev} y {@code next}, actualizando {@code prev.next} y {@code next.prev}.
-  public void insertAdd(T elem, Node<T> prev, Node<T> next) {
-    Node<T> newNode = new Node<>(elem, prev, next);
-    prev.next = newNode;
-    next.prev = newNode;
-    count++;
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{crear el nodo y actualizar \texttt{prev.next}, \texttt{next.prev} y \texttt{count} $\Rightarrow O(1)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{actualizarFirst}actualizarFirst}
-\begin{lstlisting}[language=Java]
-  //Cambia la referencia al primer nodo; no modifica los enlaces ni el número de elementos.
-  public void actualizarFirst(Node<T> node) {first = node;}
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{una sola asignación $\Rightarrow O(1)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{insertFirst}insertFirst}
-\begin{lstlisting}[language=Java]
-  //Inserta {@code elem} al principio y actualiza {@code first}
-  public void insertFirst(T elem) {
-    if (isEmpty()) {
-      addWhenEmpty(elem);
-      return;
-    }
-    insertAdd(elem, first.prev, first);
-    first = first.prev;
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{\texttt{insertAdd} y mover \texttt{first}: $O(1) + O(1) = O(1)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{iterator}iterator}
-\begin{lstlisting}[language=Java]
-  public Iterator<T> iterator() {return new ListIterator();}
-  private class ListIterator implements Iterator<T> {
-    private Node<T> aux = first;
-    private int contador = count;
-    @Override
-    public boolean hasNext() {return contador > 0;}
-    @Override
-    public T next() {
-      if (!hasNext()) {throw new NoSuchElementException();}
-      T data = aux.data;
-      aux = aux.next;
-      contador--;
-      return data;
-    }
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-
-\coste{\texttt{hasNext} y \texttt{next} cuestan $O(1)$. Recorrer toda la lista: $n \cdot O(1) = O(n)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{toString}toString}
-\begin{lstlisting}[language=Java]
-  //Concatena la representación de todos los elementos.
-  public String toString() {
-    String result = new String();
-    Iterator<T> it = iterator();
-    while (it.hasNext()) {
-      T elem = it.next();
-      result = result + "[" + elem.toString() + "] \n";
-    }
-    return "DoubleLinkedList " + result + "]";
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{el recorrido es $O(n)$, pero cada concatenación copia todo lo acumulado:
-\[ \sum_{i=1}^{n} i = \frac{n(n+1)}{2} \;\Rightarrow\; O(n^2) \]}
-
-\begin{table}[ht]
-\section{\label{tablaResumen}Resumen de costes comunes}
-\begin{minipage}{0.95\linewidth}
-\centering
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{>{\ttfamily}l l}
-\toprule
-\normalfont Operación & complejidad\\
-\midrule
-isEmpty & $O(1)$\\
-size & $O(1)$\\
-isAlone & $O(1)$\\
-locate & $O(n)$\\
-removeFirst & $O(1)$\\
-removeLast & $O(1)$\\
-remove & $O(n)$\\
-first & $O(1)$\\
-last & $O(1)$\\
-contains & $O(n)$\\
-find & $O(n)$\\
-addWhenEmpty & $O(1)$\\
-insertAdd & $O(1)$\\
-actualizarFirst & $O(1)$\\
-insertFirst & $O(1)$\\
-iterator & $O(1)$\\
-toString & $O(n^2)$\\
-
-\bottomrule
-\end{tabular}
-\caption{Costes de las operaciones comunes.}
-\end{minipage}\smallskip
-\end{table}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{addTo}addTo}
-\begin{lstlisting}[language=Java]
-  //Inserta un elemento al principio o al final
-  private void addTo(T elem, boolean front) {
-    if (isEmpty()) {
-      addWhenEmpty(elem);
-    } else {
-      insertAdd(elem, first.prev, first);
-      if (front) {actualizarFirst(first.prev);}
-    }
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{\texttt{insertAdd} (y \texttt{actualizarFirst} si es al principio) $\Rightarrow O(1)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{UnorderedfindOrAdd}UnorderedfindOrAdd}
-\begin{lstlisting}[language=Java]
-  //Busca un elemento igual a {@code elem} o lo inserta en orden. {@code n} es el tamaño de la lista.
-  public T findOrAdd(T elem) {
-    if (isEmpty()) {
-      addWhenEmpty(elem);
-      return elem;
-    }
-    Node<T> aux = locate(elem);
-    if (aux == null) {addToRear(elem);}
-    return elem;
-  }
- 
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{\texttt{locate} y después \texttt{addToRear}: $O(n) + O(1) = O(n)$. Mejor caso (vacía o es el primero): $O(1)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{addToFront}addToFront}
-\begin{lstlisting}[language=Java]
-  //Inserta {@code elem} entre el primero y el ultimo y actualiza {@code first} y los enlaces entre el nuevo nodo y los extremos de la lista.
-  public void addToFront(T elem) {
-    addTo(elem, true);
-  }
- 
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{addToRear}addToRear}
-\begin{lstlisting}[language=Java]
-  //Inserta {@code elem} entre el primero y el ultimo y actualiza los enlaces entre el nuevo nodo y los extremos de la lista.
-  public void addToRear(T elem) {
-    addTo(elem, false);
-  }
- 
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{\texttt{addToFront} y \texttt{addToRear} solo llaman a \texttt{addTo} $\Rightarrow O(1)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{addAfter}addAfter}
-\begin{lstlisting}[language=Java]
-  //Busca {@code target} e inserta {@code elem} a continuación, actualizando los enlaces de los nodos vecinos. 
-  //Si la lista está vacía, inserta primero {@code target} y después {@code elem}.
-  //Si no está vacía y no encuentra {@code target}, no modifica la lista.
-  public void addAfter(T elem, T target) {
-    if (isEmpty()) {
-      addWhenEmpty(target);
-      addAfter(elem, target);
-    } else {
-      Node<T> nodoTarget = locate(target);
-      if (nodoTarget != null) {insertAdd(elem, nodoTarget, nodoTarget.next);}
-    }
-  }
- 
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{lista no vacía: \texttt{locate} y \texttt{insertAdd}, $O(n) + O(1) = O(n)$. Lista vacía: se inserta \texttt{target} y se encuentra a la primera $\Rightarrow O(1)$.}
-
-\begin{table}[ht]
-\section{\label{tablaResumenUnordered}Resumen de costes de la lista no ordenada}
-\begin{minipage}{0.95\linewidth}
-\centering
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{>{\ttfamily}l l}
-\toprule
-\normalfont Operación & complejidad\\
-\midrule
-addTo & $O(1)$\\
-findOrAdd & $O(n)$\\
-addToFront & $O(1)$\\
-addToRear & $O(1)$\\
-addAfter & $O(n)$\\
-
-
-\bottomrule
-\end{tabular}
-\caption{Costes de las operaciones de la lista no ordenada.}
-\end{minipage}\smallskip
-\end{table}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{add}add}
-\begin{lstlisting}[language=Java]
-  //Inserta {@code elem} en orden si no existe. {@code n} es el tamaño de la lista.
-  public void add(T elem) {
-    if (isEmpty()) {
-      addWhenEmpty(elem);
-      return;
-    }
-    Node<T> last = first.prev;
-    if (elem.compareTo(first.data) == 0 || elem.compareTo(last.data) == 0) {return;}
-    if (elem.compareTo(last.data) > 0) {
-      insertAdd(elem, last, first);
-      return;
-    }
-    if (elem.compareTo(first.data) < 0) {
-      insertAdd(elem, last, first);
-      actualizarFirst(first.prev);
-      return;
-    }
-    Node<T> current = first;
-    while (current.next != first && elem.compareTo(current.next.data) > 0) {current = current.next;}
-    if (elem.compareTo(current.next.data) == 0) {return;}
-    insertAdd(elem, current, current.next);
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{mejor caso: se compara solo con \texttt{first} y \texttt{last} $\Rightarrow O(1)$. Peor caso: el elemento queda entre medias y se recorren hasta $n$ nodos $\Rightarrow O(n)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{OrderedfindOrAdd}OrderedfindOrAdd}
-\begin{lstlisting}[language=Java]
-  //Busca un elemento igual a {@code elem} o lo inserta en orden. {@code n} es el tamaño de la lista.
-  public T findOrAdd(T elem) {
-    if (isEmpty()) {
-      addWhenEmpty(elem);
-      return elem;
-    }
-    int comparacionConPrimero = elem.compareTo(first.data);
-    if (comparacionConPrimero == 0) {return first.data;}
-    if (comparacionConPrimero < 0) {
-      insertAdd(elem, first.prev, first);
-      actualizarFirst(first.prev);
-      return elem;
-    }
-    Node<T> last = first.prev;
-    int comparacionConUltimo = elem.compareTo(last.data);
-    if (comparacionConUltimo == 0) {return last.data;}
-    if (comparacionConUltimo > 0) {
-      insertAdd(elem, last, first);
-      return elem;
-    }
-    Node<T> current = first;
-    while (elem.compareTo(current.next.data) > 0) {current = current.next;}
-    int comparacionConSiguiente = elem.compareTo(current.next.data);
-    if (comparacionConSiguiente == 0) {return current.next.data;}
-    insertAdd(elem, current, current.next);
-    return elem;
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{igual que \texttt{add}: mejor caso $O(1)$, peor caso $O(n)$.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{merge}merge}
-\begin{lstlisting}[language=Java]
-  //En recorridos e inserciones: fusiona ambas listas en orden. {@code n} y {@code m} son sus tamaños iniciales; combinar elementos iguales añade el coste de {@code combinarCon}.
-  public void merge(DoubleLinkedList<T> lista) {
-    if (lista == null || lista.first == null) {return;}
-    if (isEmpty()) { // si nuestra lista esta vacia se clona con la del parametro
-      first = lista.first;
-      count = lista.count;
-      return;
-    }
-    Node<T> p1 = first; // creamos los punteros para que recorran las listas
-    Node<T> p2 = lista.first;
-    int cuantos1 = count; // guardamos en auxiliares la cantidad total de elementos de cada lista.
-    int cuantos2 = lista.count;
-    while (cuantos1 > 0 && cuantos2 > 0) { // fusionamos ambas listas
-      if (p1.data.compareTo(p2.data) < 0) { // si esta ordenado, seguimos comprobando
-        p1 = p1.next;
-        cuantos1--;
-      } else if (p1.data.compareTo(p2.data) == 0) {
-        combinarIguales(p1.data, p2.data);
-        p1 = p1.next;
-        p2 = p2.next;
-        cuantos1--;
-        cuantos2--;
-      } else { // si no reemplazamos
-        insertAdd(p2.data, p1.prev, p1); // si esta desordenado, añadimos en nuestra lista el elemento anterior a p1.
-        if (p1 == first) { // comprobamos si hemos añadido un elemento antes del first
-          actualizarFirst(first.prev); // p2 pasa a ser el nuevo first de nuestra lista
-        }
-        p2 = p2.next; // actualizamos el puntero de la lista del segundo 
-        cuantos2--;
-      }
-    }
-    // si aun quedan elementos en la otra lista, entonces es que quedan los mayores, por lo que irian al final.
-    while (cuantos2 > 0) {
-      insertAdd(p2.data, first.prev, first); // insertamos cada elemento al final en orden
-      p2 = p2.next;
-      cuantos2--;
-    }
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{$n$ y $m$ son los tamaños de las dos listas. Si alguna está vacía, $O(1)$ (con la actual vacía solo se copian \texttt{first} y \texttt{count}). En el caso general cada vuelta del bucle avanza en al menos una lista y cuesta $O(1)$:
-\[ \mbox{vueltas} \leq n + m \;\Rightarrow\; O(n + m) \]
-Cada pareja de elementos iguales suma una llamada a \texttt{combinarIguales}.}
-
-\begin{minipage}{0.95\linewidth}
-\section{\label{combinarIguales}combinarIguales}
-\begin{lstlisting}[language=Java]
-  //Combina las X de {@code otro} con las de este Y. {@code n} es el número de X de {@code otro}, {@code m} el número inicial de X de este Y y {@code k} el máximo de Y asociados a una X.
-  //Siendo X Actor o Pelicula e Y el que no sea X
-  private void combinarIguales(T actual, T entrante) {
-    if (actual instanceof Actor actor) {
-      actor.combinarCon((Actor) entrante);
-    } else if (actual instanceof Pelicula pelicula) {
-      pelicula.combinarCon((Pelicula) entrante);
-    }
-  }
-\end{lstlisting}
-\end{minipage}\smallskip
-
-\coste{solo llama a \texttt{combinarCon} (de \texttt{Actor} o de \texttt{Pelicula}), así que cuesta lo mismo que ese método. Para dos actores, $n$ son las películas del actor que entra, $m$ las que ya tenía el nuestro y $k$ el máximo de actores de una película (no son las letras de \texttt{merge}). Por cada una de las $n$ películas hay dos \texttt{findOrAdd}, uno en las películas del actor ($\leq m + n$ elementos) y otro en los actores de la película ($\leq k$):
-\[ n \cdot \bigl( O(m + n) + O(k) \bigr) = O\bigl(n(m + n + k)\bigr) \]
-Con dos películas es igual, intercambiando los papeles.}
-
-\begin{table}[ht]
-\section{\label{tablaResumenOrdered}Resumen de costes de la lista ordenada}
-\begin{minipage}{0.95\linewidth}
-\centering
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{>{\ttfamily}l p{8cm}}
-\toprule
-\normalfont Operación & complejidad\\
-\midrule
-add & $O(n)$\\
-OrderedfindOrAdd & $O(n)$\\
-merge & $O(n + m)$ + llamadas a \texttt{combinarIguales}\\
-combinarIguales & $O(n(m + n + k))$\\
-
-
-\bottomrule
-\end{tabular}
-\caption{Costes de las operaciones de la lista ordenada.}
-\end{minipage}\smallskip
-\end{table}
-
-\section{Pruebas realizadas}
-Se han implementado 18 pruebas con JUnit 5, agrupadas por clase.
-
-\subsection*{Lista ordenada (\texttt{OrderedDoubleLinkedListTest})}
 \begin{itemize}
-\item \texttt{testOrdenYDuplicados}: inserta C, A, B y un A repetido; comprueba que quedan 3 elementos en orden A, B, C.
-\item \texttt{testFindOrAdd}: \texttt{findOrAdd} con un elemento nuevo y con uno repetido; el tamaño no crece con el repetido.
-\item \texttt{testMergeVaciaConVacia}: fusionar dos listas vacías deja la lista vacía.
-\item \texttt{testMergeVaciaConDatos}: fusionar una lista con datos en una lista vacía.
-\item \texttt{testMergeConDatosConVacia}: fusionar una lista vacía en una con datos no la modifica.
-\item \texttt{testMergeRangosSeparados}: listas con rangos que no se solapan (A, B con C, D).
-\item \texttt{testMergeRangosIntercalados}: listas con elementos intercalados (A, C con B, D); el resultado queda ordenado.
-\item \texttt{testMergeConIDsRepetidos}: dos \texttt{Actor} con el mismo identificador se combinan en uno que conserva los dos años.
-\item \texttt{testAutoFusion}: fusionar una lista consigo misma no lanza excepción.
+    \item \textbf{\texttt{HashMap<String, Integer> th}}: a cada actor le asigna un identificador numérico. Permite pasar del nombre al identificador en $O(1)$. Si un actor aparece en varias películas conserva el mismo identificador.
+    \item \textbf{\texttt{String[] keys}}: operación inversa, del identificador al nombre, también en $O(1)$.
+    \item \textbf{\texttt{ArrayList<Integer>[] adjList}}: la posición $i$ guarda los identificadores de los actores que han compartido alguna película con el actor $i$.
 \end{itemize}
 
-\subsection*{Lista no ordenada (\texttt{UnorderedDoubleLinkedListTest})}
+Una forma de verlo es la de los muelles y contenedores del ejercicio de clase: cada posición de \texttt{adjList} es un muelle (un actor) y en él se colocan como contenedores los identificadores de los actores con los que está relacionado.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l l l}
+\toprule
+\texttt{th} (nombre $\to$ id) & \texttt{keys} (id $\to$ nombre) & \texttt{adjList} (id $\to$ vecinos) \\
+\midrule
+Brad Pitt $\to$ 0 & 0 $\to$ Brad Pitt & 0 $\to$ $\langle$1, 2$\rangle$ \\
+Morgan Freeman $\to$ 1 & 1 $\to$ Morgan Freeman & 1 $\to$ $\langle$0, 2$\rangle$ \\
+Julia Roberts $\to$ 2 & 2 $\to$ Julia Roberts & 2 $\to$ $\langle$0, 1, 3$\rangle$ \\
+Cate Blanchett $\to$ 3 & 3 $\to$ Cate Blanchett & 3 $\to$ $\langle$2$\rangle$ \\
+\bottomrule
+\end{tabular}
+\caption{Ejemplo de las tres estructuras del grafo (datos del enunciado).}
+\end{table}
+
+\textbf{Invariantes} que cumple \texttt{adjList} tras \texttt{crearGrafo}: no hay vecinos repetidos (aunque dos actores coincidan en varias películas), ningún actor es vecino de sí mismo y la relación es simétrica (si $b \in adjList[a]$ entonces $a \in adjList[b]$).
+
+\section{Estructuras auxiliares del recorrido}
+
 \begin{itemize}
-\item \texttt{testAddAfterSinTarget}: \texttt{addAfter} con un objetivo ausente en una lista no vacía no modifica la lista.
-\item \texttt{testAddToRearaddAfter}: con películas, \texttt{addToRear} y \texttt{addAfter} dejan los elementos en el orden esperado.
-\item \texttt{testInsertarFrontRear}: \texttt{addToFront} y \texttt{addToRear} en lista vacía, de un elemento y de varios; se comprueban \texttt{first}, \texttt{last} y \texttt{size}.
-\item \texttt{testAddAfterListaVacia}: \texttt{addAfter} en lista vacía, con objetivo presente y con objetivo ausente.
-\item \texttt{testContainsYFind}: \texttt{contains} y \texttt{find} en lista vacía, con elemento presente y con elemento ausente.
-\item \texttt{testEliminaciones}: excepciones en lista vacía; eliminación de un elemento intermedio, del primero, del último y del único restante.
+    \item \textbf{\texttt{Queue<Integer> porExaminar}}, implementada con \texttt{LinkedList}: cola FIFO de actores descubiertos que aún no se han expandido. Al ser FIFO, el recorrido avanza por niveles: primero los compañeros directos, luego los compañeros de estos, etc.
+    \item \textbf{\texttt{boolean[] examinados}}: marca los actores ya encolados para no volver a procesarlos, lo que garantiza que el recorrido termina.
+    \item \textbf{\texttt{int[] padre}} (solo en la parte opcional): para cada actor descubierto guarda desde qué actor se llegó a él. Siguiendo \texttt{padre} desde el destino hasta el origen se reconstruye la cadena de relaciones.
+    \item \textbf{\texttt{int[] distancia}} (solo en \texttt{print} con profundidad): número de relaciones desde el origen hasta cada actor descubierto.
 \end{itemize}
 
-\subsection*{Integración con la práctica 1 (\texttt{LectorPeliculasActoresTest})}
+\section{Alternativas examinadas}
+
+\subsection{Representación del grafo}
+
 \begin{itemize}
-\item \texttt{leeActoresYPeliculasDelFichero}: cantidades de registros, actores y películas, algunos actores concretos y búsqueda por identificador.
-\item \texttt{testRelacionesActorPeliculaConLotes}: las relaciones entre actores y películas existen en ambos sentidos y no se repiten identificadores.
-\item \texttt{noDuplicaRelacionesActorPeliculaRepetidas}: las 11 filas de \textit{Super López} corresponden a 10 actores únicos, porque Dani Rovira aparece en 2015 y 2018.
+    \item \textbf{Matriz de adyacencia} ($V \times V$): comprobar si dos actores son vecinos es $O(1)$, pero ocupa $O(V^2)$ de memoria y recorrer los vecinos de un actor cuesta $O(V)$ aunque tenga pocos. En este problema cada actor comparte película con muy pocos actores en comparación con el total, de modo que la matriz estaría casi vacía. Se descarta.
+    \item \textbf{Lista de adyacencia} (elegida): memoria $O(V + E)$, y recorrer los vecinos de un actor cuesta lo que vale su número de vecinos. Es la estructura que propone el enunciado.
+    \item \textbf{Sin grafo, consultando las listas de películas y actores}: cada paso del recorrido iría de un actor a sus películas y de cada película a sus actores. Se evita construir el grafo, pero cada llamada recorre listas enlazadas más largas y repite trabajo. Como se piden muchas llamadas, compensa construir el grafo una sola vez.
 \end{itemize}
 
-\chapter{Código}
+\subsection{Algoritmo de búsqueda}
+
+\begin{itemize}
+    \item \textbf{Recorrido en profundidad}: también decide si hay conexión en $O(V+E)$, pero la cadena que encuentra no es necesariamente la más corta.
+    \item \textbf{Recorrido en anchura} (elegido): decide la conexión en $O(V+E)$ y, al avanzar por niveles con la cola, la primera cadena encontrada es la de menor número de relaciones. Es además el uso natural de la cola que se estudia en esta actividad.
+\end{itemize}
+
+\subsection{Una o dos operaciones de conexión}
+
+El enunciado define la operación obligatoria (\texttt{boolean}) y la opcional (\texttt{Array\allowbreak List<String>}) con el mismo nombre y los mismos parámetros. En Java dos métodos no pueden diferenciarse solo por el tipo de retorno, por lo que se han implementado como dos métodos: \texttt{estanConectados} devuelve el camino y \texttt{estanConectadosBoolean} devuelve el resultado booleano.
+
+Se ha preferido mantener la versión booleana separada en lugar de calcularla a partir del camino, porque no necesita el vector \texttt{padre} ni construir la lista de nombres, de modo que hace menos trabajo por llamada.
+
+\subsection{Eliminación de relaciones repetidas en \texttt{crearGrafo}}
+
+Dos actores que coinciden en varias películas generarían la misma relación varias veces. Se ha optado por comprobar con \texttt{contains} si el vecino ya está en la lista antes de añadirlo. Es la solución más sencilla y garantiza el invariante de no repetidos, a cambio de recorrer la lista de vecinos en cada inserción ($O(g)$). Una alternativa más eficiente sería insertar sin comprobar y eliminar los repetidos al final con una única pasada en $O(V+E)$ usando un vector de marcas.
+
+% =============================================================================
+\chapter{\label{cap:metodos}Diseño e implementación de los métodos principales}
+
+Para cada método se indica su especificación (precondición y postcondición), una descripción del algoritmo, los casos de prueba y su coste razonado. El código de cada método se encuentra en el capítulo \ref{cap:codigo}.
+
+% -----------------------------------------------------------------------------
+\section{\label{crearGrafo}crearGrafo}
+\espec{\texttt{peliculas} no es \texttt{null} y cada película tiene rellena su lista de actores (lo garantiza el lector de la práctica 2).}
+{\texttt{th}, \texttt{keys} y \texttt{adjList} describen el grafo de todos los actores de \texttt{peliculas}; cada actor tiene un único identificador entre $0$ y $V-1$; \texttt{adjList[i]} no tiene repetidos ni contiene a $i$, y la relación es simétrica.}
+\algoritmo{(1) recorrer todas las películas y, por cada actor que no esté en \texttt{th}, asignarle como identificador el número de actores registrados hasta ese momento; (2) rellenar \texttt{keys} invirtiendo \texttt{th}; (3) crear una lista vacía por actor; (4) por cada película, para cada pareja de actores $a < b$ que aún no estén relacionados, añadir $b$ a la lista de $a$ y $a$ a la de $b$. La condición $a < b$ evita tratar dos veces la misma pareja y relacionar un actor consigo mismo.}
+
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{p{5.2cm} p{8cm}}
+\toprule
+Caso & Resultado esperado \\
+\midrule
+Lista de películas vacía & \texttt{th} y \texttt{keys} vacíos, \texttt{adjList} de tamaño 0 \\
+Película con un solo actor & el actor tiene identificador y su lista de vecinos está vacía \\
+Actor en varias películas & un único identificador \\
+Dos actores que coinciden en dos películas & cada uno aparece una sola vez en la lista del otro \\
+Película con $k$ actores & cada actor tiene, al menos, los otros $k-1$ como vecinos \\
+Datos completos & se cumplen los invariantes de simetría y no repetidos \\
+\bottomrule
+\end{tabular}
+\caption{Casos de prueba de \texttt{crearGrafo}.}
+\end{table}
+
+\coste{se analiza paso a paso:
+\begin{itemize}
+    \item Pasos (1) y (2): recorren los actores de todas las películas, como mucho $P \cdot K$, con operaciones $O(1)$ en el \texttt{HashMap}, más $O(V)$ para rellenar \texttt{keys} $\Rightarrow O(P \cdot K + V)$.
+    \item Paso (3): crea una lista vacía por actor $\Rightarrow O(V)$.
+    \item Paso (4): para cada una de las $P$ películas, los dos bucles anidados recorren todas las parejas de sus actores, como mucho $K \cdot K = K^2$. Para cada pareja válida, \texttt{contains} recorre la lista de vecinos de $a$, que tiene como mucho $g$ elementos. Total: $P \cdot K^2 \cdot g$ operaciones $\Rightarrow O(P \cdot K^2 \cdot g)$.
+\end{itemize}
+El paso (4) es el dominante, así que el coste de \texttt{crearGrafo} es $O(P \cdot K^2 \cdot g)$. Es una cota superior: la mayoría de las películas tienen muchos menos de $K$ actores y la mayoría de los actores muchos menos de $g$ vecinos (57 de media con nuestros datos, como se ve en la sección \ref{resultados}), por lo que en la práctica \texttt{crearGrafo} tarda menos de 2 segundos.}
+
+% -----------------------------------------------------------------------------
+\section{\label{estanConectadosBoolean}estanConectadosBoolean}
+\espec{el grafo está creado.}
+{si \texttt{a1} o \texttt{a2} no pertenecen al grafo, lanza \texttt{IllegalArgumentException} indicando qué actor no se encuentra. En otro caso, devuelve \texttt{true} si y solo si hay una cadena de relaciones entre \texttt{a1} y \texttt{a2}. Un actor siempre está conectado consigo mismo. El grafo no se modifica.}
+\algoritmo{se traducen los nombres a identificadores con el método auxiliar \texttt{identificador}, que consulta \texttt{th} y lanza la excepción si el actor no existe. Si son el mismo, el resultado es \texttt{true}. Si no, se encola el origen y se marca como examinado; mientras la cola no esté vacía y no se haya encontrado el destino, se saca un actor y se recorren sus vecinos: si uno es el destino se termina, y si no, cada vecino no examinado se marca y se encola.}
+
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{p{4.2cm} p{4.6cm} l}
+\toprule
+Caso & Entrada & Resultado esperado \\
+\midrule
+Mismo actor & Karra Elejalde, Karra Elejalde & \texttt{true} \\
+Compañeros directos & dos actores de una misma película & \texttt{true} \\
+Cadena de varios saltos & Karra Elejalde, Charlize Theron & \texttt{true} \\
+Cadena de varios saltos & Karra Elejalde, Florentino Fernández & \texttt{true} \\
+Cadena de varios saltos & Florentino Fernández, Charlize Theron & \texttt{true} \\
+Simetría & mismo par en orden inverso & mismo resultado \\
+Sin conexión & An So-yo, Charlize Theron & \texttt{false} \\
+Actor inexistente & nombre que no está en \texttt{th} & \texttt{IllegalArgumentException} \\
+\bottomrule
+\end{tabular}
+\caption{Casos de prueba de \texttt{estanConectadosBoolean}.}
+\end{table}
+
+\coste{crear \texttt{examinados} es $O(V)$. Cada actor entra en la cola como máximo una vez y la lista de vecinos de cada actor se recorre una sola vez, por lo que se examinan como mucho $2E$ entradas de \texttt{adjList}. El peor caso es que no haya conexión, porque se recorre toda la componente del origen: $O(V+E)$. Si hay conexión, el recorrido se detiene en cuanto aparece el destino.}
+
+% -----------------------------------------------------------------------------
+\section{\label{estanConectados}estanConectados (parte opcional)}
+\espec{el grafo está creado.}
+{si \texttt{a1} o \texttt{a2} no pertenecen al grafo, lanza \texttt{IllegalArgumentException}. En otro caso, devuelve la lista \texttt{a1}, \ldots, \texttt{a2} en la que cada par de actores consecutivos ha compartido alguna película, con el menor número de relaciones posible. Si no hay conexión, la lista está vacía. Si \texttt{a1} es \texttt{a2}, la lista contiene un único elemento.}
+\algoritmo{es el mismo recorrido en anchura que \texttt{estanConectadosBoolean}, pero cada vez que se descubre un actor se anota en \texttt{padre} desde qué actor se ha llegado a él. Si se encuentra el destino, se parte de él y se sigue \texttt{padre} hasta llegar al origen, añadiendo cada nombre (obtenido con \texttt{keys}) a la lista. Como la lista queda en orden inverso, al final se invierte con \texttt{Collections.reverse}.}
+
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{p{5.2cm} p{8cm}}
+\toprule
+Caso & Resultado esperado \\
+\midrule
+Mismo actor & lista con un único elemento, el propio actor \\
+Compañeros directos & lista de dos elementos: \texttt{a1}, \texttt{a2} \\
+Cadena de varios saltos & empieza en \texttt{a1}, termina en \texttt{a2} y cada par consecutivo es una relación del grafo \\
+Longitud mínima & ninguna cadena entre \texttt{a1} y \texttt{a2} tiene menos elementos \\
+Sin conexión (An So-yo, Charlize Theron) & lista vacía \\
+Coherencia & la lista es no vacía si y solo si \texttt{estanConectadosBoolean} devuelve \texttt{true} \\
+Actor inexistente & \texttt{IllegalArgumentException} \\
+\bottomrule
+\end{tabular}
+\caption{Casos de prueba de \texttt{estanConectados}.}
+\end{table}
+
+\coste{el recorrido es el mismo que en \texttt{estanConectadosBoolean}, $O(V+E)$, con un vector más de tamaño $V$. Reconstruir el camino e invertirlo cuesta $O(L)$, siendo $L$ el número de actores del camino; como $L \le V$, el total sigue siendo $O(V+E)$.}
+
+% -----------------------------------------------------------------------------
+\section{\label{printProfundidad}print (con profundidad)}
+\espec{el grafo está creado.}
+{si \texttt{destino} está a \texttt{profundidad} relaciones o menos de \texttt{nombre}, muestra por pantalla esa distancia (0 si son el mismo actor, 1 si han compartido película). Si no se alcanza con esa profundidad, lo indica. Si algún actor no existe, muestra un aviso con su nombre. Una profundidad negativa se trata como 0.}
+\algoritmo{recorrido en anchura que guarda en \texttt{distancia} el número de relaciones desde el origen hasta cada actor. Los actores que ya están a \texttt{profundidad} se sacan de la cola pero no se expanden. Al sacar el destino de la cola se muestra su distancia y se termina; si la cola se vacía sin encontrarlo, se indica que no está a esa distancia.}
+
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{p{5.2cm} p{8cm}}
+\toprule
+Caso & Resultado esperado \\
+\midrule
+Mismo actor & muestra distancia 0 \\
+Compañeros directos & muestra distancia 1 \\
+Pareja a varios saltos (prof. 5) & muestra la distancia entre ambos \\
+Destino más lejos que \texttt{profundidad} & indica que no está a esa distancia \\
+\texttt{nombre} o \texttt{destino} inexistente & muestra «No se encuentra el actor» con su nombre \\
+Profundidad negativa & se trata como 0 \\
+\bottomrule
+\end{tabular}
+\caption{Casos de prueba de \texttt{print} con profundidad.}
+\end{table}
+
+\coste{$O(V)$ para crear los vectores y, como mucho, $O(V+E)$ para el recorrido, que termina en cuanto se encuentra el destino. Al limitar la profundidad solo se recorren los actores a esa distancia o menos.}
+
+% -----------------------------------------------------------------------------
+\section{\label{print}print}
+\espec{el grafo está creado.}
+{muestra por pantalla, para cada actor, su identificador, su nombre y los nombres de sus vecinos. El grafo no se modifica.}
+\algoritmo{recorrer \texttt{adjList} y, por cada actor, sus vecinos, traduciendo los identificadores con \texttt{keys}.}
+
+
+\noindent\textbf{Casos de prueba:} grafo vacío (no muestra nada); actor sin vecinos (muestra la línea con la flecha y nada más); grafo del enunciado (cada línea coincide con la tabla de ejemplo del capítulo de estructuras de datos).
+
+\coste{se visitan los $V$ actores y las $2E$ entradas de \texttt{adjList} $\Rightarrow O(V+E)$.}
+
+% -----------------------------------------------------------------------------
+\section{\label{auxiliares}Métodos auxiliares}
+
+El enunciado no pide estos métodos, pero se especifican igualmente para que todo el código entregado esté documentado.
+
+\subsection*{\texttt{identificador} (\texttt{Graph}, privado)}
+\espec{el grafo está creado.}
+{devuelve el identificador numérico de \texttt{nombre}; si no está en \texttt{th}, lanza \texttt{IllegalArgumentException} con el nombre que falta.}
+\noindent\textbf{Casos de prueba:} actor existente (devuelve su identificador); actor inexistente (lanza la excepción).
+\coste{una consulta a \texttt{th} $\Rightarrow O(1)$ en media. Su código está en el capítulo \ref{cap:codigo}, junto al de \texttt{estan\allowbreak Conectados\allowbreak Boolean}.}
+
+\subsection*{\texttt{contarRelaciones} (\texttt{PruebaListasColas}, privado)}
+\espec{el grafo está creado.}
+{devuelve $E$, el número de relaciones distintas. Como cada relación aparece en la lista de sus dos actores, es la suma de los tamaños de \texttt{adjList} dividida entre 2.}
+\coste{un recorrido por las $V$ listas $\Rightarrow O(V)$, ya que \texttt{size()} es $O(1)$.}
+
+\subsection*{\texttt{medirLlamadas} (\texttt{Prueba\allowbreak Listas\allowbreak Colas}, privado)}
+\espec{el grafo está creado, tiene al menos un actor y \texttt{segundos} $> 0$.}
+{durante \texttt{segundos} segundos llama a \texttt{estanConectadosBoolean} (o a \texttt{estanConectados} si \texttt{conCamino} es \texttt{true}) con parejas aleatorias generadas con la semilla 42, y muestra el número de llamadas completadas, cuántas parejas estaban conectadas y el equivalente en llamadas por minuto. El grafo no se modifica.}
+\coste{depende del tiempo fijado; cada llamada cuesta $O(V+E)$ en el peor caso.}
+
+% -----------------------------------------------------------------------------
+\section{\label{tablaResumen}Resumen de costes}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l l l}
+\toprule
+Método & Coste & Observaciones \\
+\midrule
+\texttt{crearGrafo} & $O(P \cdot K^2 \cdot g)$ & dominado por \texttt{contains} \\
+\texttt{estanConectadosBoolean} & $O(V+E)$ & peor caso: sin conexión \\
+\texttt{estanConectados} & $O(V+E)$ & más $O(L)$ para el camino \\
+\texttt{identificador} & $O(1)$ & en media \\
+\texttt{print(nom., dest., prof.)} & $O(V+E)$ & limitado por la profundidad \\
+\texttt{print()} & $O(V+E)$ & \\
+\bottomrule
+\end{tabular}
+\caption{Costes de los métodos de \texttt{Graph}.}
+\end{table}
+
+\section{\label{pruebas}Pruebas realizadas}
+
+Las pruebas con JUnit 5 están en la clase \texttt{GraphTest}. La prueba \texttt{comprueba\allowbreak Conexiones\allowbreak Del\allowbreak Grafo} carga el conjunto de datos completo con el lector de la práctica 2 (lotes de 128 registros), construye el grafo y comprueba:
+
+\begin{itemize}
+    \item que hay conexión entre \textit{Karra Elejalde} y \textit{Charlize Theron}, y también en el orden inverso (simetría);
+    \item que hay conexión entre \textit{Karra Elejalde} y \textit{Florentino Fernández};
+    \item que hay conexión entre \textit{Florentino Fernández} y \textit{Charlize Theron};
+    \item que \textbf{no} hay conexión entre \textit{An So-yo} y \textit{Charlize Theron};
+    \item que el camino entre \textit{Karra Elejalde} y \textit{Charlize Theron} empieza y termina en esos actores, y que el camino entre \textit{An So-yo} y \textit{Charlize Theron} está vacío.
+\end{itemize}
+
+Además, la prueba muestra por pantalla, con \texttt{print} limitado a profundidad 5, la distancia entre varios pares de actores (\textit{Florentino Fernández}, \textit{Karra Elejalde}, \textit{Javier Bardem} y \textit{Charlize Theron}), lo que permite revisar a mano que los resultados tienen sentido.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{p{4.3cm} c p{6.6cm}}
+\toprule
+Pareja & Conectados & Camino obtenido \\
+\midrule
+Karra Elejalde -- Charlize Theron & sí & Karra Elejalde, Penélope Cruz, Charlize Theron \\
+Karra Elejalde -- Florentino Fernández & sí & Karra Elejalde, Javier Gutiérrez, Florentino Fernández \\
+Florentino Fernández -- Charlize Theron & sí & Florentino Fernández, Paz Vega, Karel Roden, Charlize Theron \\
+Karra Elejalde -- Javier Bardem & sí & Karra Elejalde, Javier Bardem \\
+An So-yo -- Charlize Theron & no & (lista vacía) \\
+\bottomrule
+\end{tabular}
+\caption{Resultados obtenidos con el conjunto de datos completo.}
+\end{table}
+
+Los caminos tienen sentido: por ejemplo, Karra Elejalde y Charlize Theron no han coincidido en ninguna película, pero ambos han trabajado con Penélope Cruz. Que no haya conexión con An So-yo indica que pertenece a uno de los grupos pequeños y aislados del grafo.
+
+\subsection*{Prueba con los ficheros pequeños}
+
+Además del conjunto de datos completo, el programa se ha ejecutado con los ficheros pequeños de prueba de la práctica 2: ocho ficheros \texttt{actores\_y\_\allowbreak peliculas\_AAAA.txt}, de 2015 a 2022, con 96 líneas en total. Al ser tan pequeños, los resultados se pueden comprobar a mano.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l r r}
+\toprule
+ & Ficheros pequeños & Fichero completo \\
+\midrule
+Ficheros leídos & 8 & 54 \\
+Películas ($P$) & 40 & 106\,926 \\
+Actores ($V$) & 50 & 102\,689 \\
+Relaciones distintas ($E$) & 293 & 2\,913\,009 \\
+\bottomrule
+\end{tabular}
+\caption{Tamaño del grafo con los ficheros pequeños y con el fichero completo.}
+\end{table}
+
+Con los ficheros pequeños se han comprobado, entre otros, estos casos:
+\begin{itemize}
+    \item \textit{Dani Rovira} y \textit{Karra Elejalde} están conectados directamente: el camino es \textit{Dani Rovira}, \textit{Karra Elejalde}, y \texttt{print} indica distancia 1.
+    \item \textit{Dani Rovira} consigo mismo: conectado, con un camino de un único elemento.
+    \item \textit{Karra Elejalde} y \textit{Antonio Resines}: conectados directamente.
+    \item \textit{Charlize Theron}, que no aparece en estos ficheros: se lanza \texttt{IllegalArgumentException} con el mensaje «No se encuentra el actor: Charlize Theron».
+\end{itemize}
+
+En estos ficheros todos los actores forman un único grupo conectado, por lo que todas las parejas aleatorias de la medición resultaron conectadas.
+
+Los casos de prueba de cada método se detallan en las tablas de las secciones anteriores de este capítulo.
+
+% =============================================================================
+\chapter{\label{cap:codigo}Código}
 Para una mejor lectura del código, se facilita el enlace al GitHub público:
 \begin{itemize}
-\item \url{https://github.com/erasmosee/EDA_Practica2_LinkedList}
+\item Práctica 3 (este trabajo): \url{https://github.com/erasmosee/EDA_Practica3_Pilas_Colas}
+\item Práctica 2 (base de la que se parte): \url{https://github.com/erasmosee/EDA_Practica2_LinkedList}
 \end{itemize}
 
+A continuación se incluye el código de los métodos descritos en el capítulo \ref{cap:metodos}, en el mismo orden, y el de los métodos auxiliares de medición.
+
+\section{\texttt{crearGrafo}}
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Java]
+public void crearGrafo(OrderedDoubleLinkedList<Pelicula> peliculas) {
+  th = new HashMap<>();
+  for (Pelicula pelicula : peliculas) {
+    for (Actor actor : pelicula.getActorLinkedList()) {
+      String nombreActor = actor.getName();
+      if (!th.containsKey(nombreActor)) {
+        th.put(nombreActor, th.size());
+      }
+    }
+  }
+
+  keys = new String[th.size()];
+  for (String k : th.keySet()) {
+    keys[th.get(k)] = k;
+  }
+
+  adjList = new ArrayList[th.size()];
+  for (int i = 0; i < adjList.length; i++) {
+    adjList[i] = new ArrayList<>();
+  }
+
+  for (Pelicula pelicula : peliculas) {
+    for (Actor actorA : pelicula.getActorLinkedList()) {
+      int a = th.get(actorA.getName());
+      for (Actor actorB : pelicula.getActorLinkedList()) {
+        int b = th.get(actorB.getName());
+        if (a < b) {
+          if (!adjList[a].contains(b)) {
+            adjList[a].add(b);
+            adjList[b].add(a);
+          }
+        }
+      }
+    }
+  }
+}
+\end{lstlisting}
+\end{minipage}\par
+
+\section{\texttt{estanConectadosBoolean} e \texttt{identificador}}
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Java]
+public boolean estanConectadosBoolean(String a1, String a2) {
+  Queue<Integer> porExaminar = new LinkedList<>();
+  int pos1 = identificador(a1);
+  int pos2 = identificador(a2);
+  boolean enc;
+  boolean[] examinados = new boolean[th.size()];
+
+  enc = pos1 == pos2;
+  examinados[pos1] = true;
+  porExaminar.add(pos1);
+
+  while (!porExaminar.isEmpty() && !enc) {
+    int actual = porExaminar.remove();
+    for (int vecino : adjList[actual]) {
+      if (vecino == pos2) {
+        enc = true;
+        break;
+      }
+      if (!examinados[vecino]) {
+        examinados[vecino] = true;
+        porExaminar.add(vecino);
+      }
+    }
+  }
+  return enc;
+}
+
+private int identificador(String nombre) {
+  Integer id = th.get(nombre);
+  if (id == null) {
+    throw new IllegalArgumentException("No se encuentra el actor: " + nombre);
+  }
+  return id;
+}
+\end{lstlisting}
+\end{minipage}\par
+
+\section{\texttt{estanConectados} (parte opcional)}
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Java]
+public ArrayList<String> estanConectados(String a1, String a2) {
+  Queue<Integer> porExaminar = new LinkedList<>();
+  int[] padre = new int[th.size()];
+  int pos1 = identificador(a1);
+  int pos2 = identificador(a2);
+  ArrayList<String> camino = new ArrayList<>();
+  boolean enc;
+  boolean[] examinados = new boolean[th.size()];
+
+  enc = pos1 == pos2;
+  examinados[pos1] = true;
+  porExaminar.add(pos1);
+
+  while (!porExaminar.isEmpty() && !enc) {
+    int actual = porExaminar.remove();
+    for (int vecino : adjList[actual]) {
+      if (vecino == pos2) {
+        enc = true;
+        padre[vecino] = actual;
+        break;
+      }
+      if (!examinados[vecino]) {
+        examinados[vecino] = true;
+        porExaminar.add(vecino);
+        padre[vecino] = actual;
+      }
+    }
+  }
+  if (enc) {
+    int paso = pos2;
+    camino.add(keys[paso]);
+    while (paso != pos1) {
+      paso = padre[paso];
+      camino.add(keys[paso]);
+    }
+    Collections.reverse(camino);
+  }
+  return camino;
+}
+\end{lstlisting}
+\end{minipage}\par
+
+\section{\texttt{print} (con profundidad)}
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Java]
+public void print(String nombre, String destino, int profundidad) {
+  Integer inicio = th.get(nombre);
+  Integer fin = th.get(destino);
+  if (inicio == null || fin == null) {
+    System.out.println("No se encuentra el actor: "
+        + (inicio == null ? nombre : destino));
+    return;
+  }
+  if (profundidad < 0) {
+    profundidad = 0;
+  }
+  boolean[] examinados = new boolean[th.size()];
+  int[] distancia = new int[th.size()];
+  Queue<Integer> porExaminar = new LinkedList<>();
+
+  examinados[inicio] = true;
+  porExaminar.add(inicio);
+
+  while (!porExaminar.isEmpty()) {
+    int actual = porExaminar.remove();
+    if (actual == fin) {
+      System.out.println(nombre + " esta a una distancia "
+          + distancia[actual] + " de " + destino);
+      return;
+    }
+    if (distancia[actual] < profundidad) {
+      for (int vecino : adjList[actual]) {
+        if (!examinados[vecino]) {
+          examinados[vecino] = true;
+          distancia[vecino] = distancia[actual] + 1;
+          porExaminar.add(vecino);
+        }
+      }
+    }
+  }
+  System.out.println(nombre + " no esta a una distancia <= "
+      + profundidad + " de " + destino);
+}
+\end{lstlisting}
+\end{minipage}\par
+
+\section{\texttt{print}}
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Java]
+public void print() {
+  for (int i = 0; i < adjList.length; i++) {
+    System.out.print("Element: " + i + " " + keys[i] + " --> ");
+    for (int k : adjList[i])
+      System.out.print(keys[k] + " ### ");
+    System.out.println();
+  }
+}
+\end{lstlisting}
+\end{minipage}\par
+
+\section{\texttt{contarRelaciones} (\texttt{PruebaListasColas})}
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Java]
+private static long contarRelaciones(Graph grafo) {
+  long suma = 0;
+  for (ArrayList<Integer> vecinos : grafo.adjList) {
+    suma += vecinos.size();
+  }
+  return suma / 2;
+}
+\end{lstlisting}
+\end{minipage}\par
+
+\section{\texttt{medirLlamadas} (\texttt{PruebaListasColas})}
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Java]
+private static void medirLlamadas(Graph grafo, int segundos, boolean conCamino) {
+  Random azar = new Random(SEMILLA);
+  int total = grafo.keys.length;
+  long llamadas = 0;
+  long conectados = 0;
+  long inicio = System.nanoTime();
+  long limite = inicio + segundos * 1_000_000_000L;
+
+  while (System.nanoTime() < limite) {
+    String a1 = grafo.keys[azar.nextInt(total)];
+    String a2 = grafo.keys[azar.nextInt(total)];
+    boolean enc = conCamino ? !grafo.estanConectados(a1, a2).isEmpty()
+        : grafo.estanConectadosBoolean(a1, a2);
+    if (enc) {
+      conectados++;
+    }
+    llamadas++;
+  }
+
+  double transcurridos = (System.nanoTime() - inicio) / 1e9;
+  String metodo = conCamino ? "estanConectados (camino)" : "estanConectadosBoolean";
+  System.out.printf("%s: %d llamadas en %.1f s, %d conectadas, %.0f llamadas por minuto%n",
+      metodo, llamadas, transcurridos, conectados, llamadas / transcurridos * 60);
+}
+\end{lstlisting}
+\end{minipage}\par
+
+
+% =============================================================================
 \chapter{Conclusiones}
-La práctica nos ha servido para ver el potencial que tienen las listas enlazadas cuando cumplen los criterios de estar doblemente enlazadas y de ser una lista circular, frente a listas enlazadas más simples, si bien es cierto que la memoria usada por las listas doblemente enlazadas es bastante superior a las listas enlazadas de una sola dirección, consideramos que es un coste asumible a la hora de proceder a trabajar con dichas listas.
+
+La práctica nos ha servido para ver la utilidad de las colas fuera de los ejemplos de clase: el comportamiento FIFO es lo que hace que el recorrido avance por niveles y, por tanto, que la primera cadena encontrada entre dos actores sea la más corta. Con una pila en su lugar el algoritmo seguiría encontrando la conexión, pero no la cadena mínima.
+
+También hemos comprobado la ventaja de separar la construcción de la estructura de su uso. Construir el grafo tiene un coste, pero se hace una sola vez; a partir de ahí cada consulta trabaja con identificadores enteros y vectores, sin tocar las listas enlazadas de películas y actores de la práctica 2, lo que permite responder a un gran número de consultas por minuto.
+
+Por último, la representación con \texttt{th}, \texttt{keys} y \texttt{adjList} nos ha mostrado cómo combinar estructuras distintas, cada una para lo que hace bien: el \texttt{HashMap} para buscar por nombre, el vector para acceder por posición y las listas de adyacencia para recorrer vecinos.
+
+\section{\label{resultados}Eficiencia y resultados experimentales}
+
+\subsection{Datos procesados}
+El programa se ha ejecutado sobre el conjunto de datos completo de la práctica 1. Los valores de la tabla corresponden a una ejecución en Windows con Java 25 en un equipo con procesador Intel Core i5-9400 y 16 GB de RAM.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l r}
+\toprule
+Magnitud & Valor \\
+\midrule
+Ficheros leídos (años 1970--2023) & 54 \\
+Películas ($P$) & 106\,926 \\
+Actores ($V$) & 102\,689 \\
+Relaciones distintas ($E$) & 2\,913\,009 \\
+Tiempo de lectura de los ficheros (ms) & 5\,030 \\
+Tiempo de \texttt{crearGrafo} (ms) & 1\,537 \\
+\bottomrule
+\end{tabular}
+\caption{Tamaño del grafo y tiempos de carga y construcción.}
+\end{table}
+
+El grafo es muy disperso: con $V = 102\,689$ actores podría haber hasta $V(V-1)/2 \approx 5{,}3 \cdot 10^{9}$ relaciones, y hay $E \approx 2{,}9 \cdot 10^{6}$, es decir, alrededor del 0{,}06\,\% de las posibles. Cada actor tiene de media $2E/V \approx 57$ compañeros de reparto. Una matriz de adyacencia ocuparía más de $10^{10}$ casillas, casi todas vacías, lo que confirma la elección de la lista de adyacencia.
+
+En las diez ejecuciones del apartado siguiente, hechas en otro entorno, la lectura tardó de media 7{,}6 s y \texttt{crearGrafo} 1{,}8 s; el número de películas, actores y relaciones fue siempre el mismo.
+
+Construir el grafo (1{,}5 s) cuesta menos de un tercio de lo que cuesta leer los ficheros (5 s). Pese al coste teórico de \texttt{contains}, en la práctica las listas de vecinos son cortas (57 de media), por lo que la comprobación de repetidos no supone un problema con estos datos.
+
+Como ejemplo de la parte opcional, el programa obtiene la cadena \textit{John Hurt} $\to$ \textit{Kevin Bacon} $\to$ \textit{Taylor Nichols} $\to$ \textit{Nicole Brydon Bloom} entre el primer y el último actor registrados.
+
+\subsection{Llamadas por minuto}
+
+Para medir el número de relaciones que se calculan por unidad de tiempo, \texttt{Prueba\allowbreak Listas\allowbreak Colas} construye el grafo y, con el método \texttt{medirLlamadas}, ejecuta durante 60 segundos llamadas con parejas de actores elegidas al azar y cuenta las llamadas completadas y cuántas parejas resultan conectadas. Las parejas se generan con una semilla fija (42), de modo que las dos operaciones se miden con la misma secuencia de parejas. El programa se ejecuta con \texttt{Prueba\allowbreak Listas\allowbreak Colas [rutaDatos] [segundos]}.
+
+Para tener en cuenta la variabilidad de las mediciones se ha ejecutado el programa completo \textbf{diez veces}, cada una con 60 segundos por método. Cada ejecución vuelve a leer los ficheros y a construir el grafo. Las diez se hicieron en una máquina virtual Linux con Java 11, 2 núcleos y 3 GB de RAM sobre el mismo equipo (Intel Core i5-9400).
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{c r r r r}
+\toprule
+ & \multicolumn{2}{c}{\texttt{estanConectadosBoolean}} & \multicolumn{2}{c}{\texttt{estanConectados}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Ejecución & Llamadas & Conectadas & Llamadas & Conectadas \\
+\midrule
+1 & 4\,565 & 4\,263 & 4\,076 & 3\,800 \\
+2 & 4\,713 & 4\,404 & 4\,740 & 4\,428 \\
+3 & 4\,532 & 4\,236 & 4\,589 & 4\,285 \\
+4 & 4\,846 & 4\,528 & 4\,373 & 4\,084 \\
+5 & 4\,536 & 4\,238 & 4\,533 & 4\,236 \\
+6 & 4\,525 & 4\,229 & 4\,538 & 4\,239 \\
+7 & 3\,901 & 3\,636 & 3\,929 & 3\,662 \\
+8 & 5\,436 & 5\,074 & 4\,390 & 4\,101 \\
+9 & 4\,154 & 3\,875 & 4\,114 & 3\,837 \\
+10 & 4\,756 & 4\,440 & 4\,838 & 4\,520 \\
+\midrule
+Media & 4\,596 & 4\,292 & 4\,412 & 4\,119 \\
+Desviación típica & 408 & & 296 & \\
+Mínimo & 3\,901 & & 3\,929 & \\
+Máximo & 5\,436 & & 4\,838 & \\
+\bottomrule
+\end{tabular}
+\caption{Llamadas completadas en 60 segundos (llamadas por minuto) en cada una de las diez ejecuciones.}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l r r}
+\toprule
+ & \texttt{estanConectadosBoolean} & \texttt{estanConectados} \\
+\midrule
+Llamadas por minuto (media) & 4\,596 & 4\,412 \\
+Llamadas por hora (estimación) & $\approx$ 275\,800 & $\approx$ 264\,700 \\
+Tiempo medio por llamada & 13{,}1 ms & 13{,}6 ms \\
+Parejas conectadas & 93{,}4\,\% & 93{,}4\,\% \\
+\bottomrule
+\end{tabular}
+\caption{Resumen: número de relaciones calculadas por unidad de tiempo.}
+\end{table}
+
+\subsection{Discusión}
+
+
+\textbf{Resultado principal.} Con el conjunto de datos completo se calculan de media unas \textbf{4\,600 relaciones por minuto} con \texttt{estanConectadosBoolean} y unas \textbf{4\,400} con \texttt{estanConectados}, es decir, del orden de \textbf{270\,000 por hora}. Cada consulta tarda unos 13 ms.
+
+\textbf{Casi todas las parejas están conectadas.} El 93{,}4\,\% de las parejas aleatorias tiene una cadena de relaciones que las une. Esto indica que la gran mayoría de los actores forman una única componente conexa muy grande, y que el resto son grupos pequeños y aislados (por ejemplo, el reparto de una sola película sin actores en común con otras).
+
+\textbf{Por qué una consulta cuesta 13 ms aunque se detenga al encontrar el destino.} Podría pensarse que, si casi todas las parejas están conectadas y el recorrido termina en cuanto aparece el destino, las consultas serían muy rápidas. No es así: cada actor tiene de media unos 57 compañeros, así que el número de actores alcanzados crece muy deprisa con cada nivel del recorrido. Para cuando se llega al destino, normalmente a pocas relaciones de distancia, el recorrido ya ha visitado una parte importante de los 102\,689 actores y de los 2{,}9 millones de relaciones. Por eso el coste real se acerca al del peor caso, $O(V+E)$. En cambio, las parejas no conectadas suelen tener el origen en una componente pequeña, que se agota enseguida, de modo que son las consultas más baratas.
+
+\textbf{Diferencia entre las dos operaciones.} \texttt{estanConectados} es de media un 4\,\% más lenta. Es la diferencia esperada: hace el mismo recorrido, pero además reserva el vector \texttt{padre} y reconstruye el camino, que cuesta $O(L)$ con $L$ de pocos elementos. Sin embargo, esa diferencia es menor que la variación entre ejecuciones (desviación típica de 300 a 400 llamadas), y en cinco de las diez ejecuciones la versión con camino hizo incluso más llamadas. En la práctica, \textbf{obtener el camino no tiene un coste apreciable} frente al recorrido.
+
+\textbf{Variabilidad.} Entre la peor y la mejor ejecución hay una diferencia de casi un 30\,\% (de 3\,901 a 5\,436 llamadas). Se debe a factores ajenos al algoritmo, como la carga del sistema, la gestión de memoria de Java o la compilación en tiempo de ejecución. Por eso se han hecho diez ejecuciones y se dan la media, la desviación típica y el rango, en lugar de un único valor.
+
+\textbf{Ficheros pequeños frente al fichero completo.} Con los ficheros pequeños (50 actores y 293 relaciones) se calculan unos 110 millones de relaciones por minuto con \texttt{estanConectadosBoolean} y unos 97 millones con \texttt{estanConectados}, frente a unas 4\,600 y 4\,400 con el fichero completo. La diferencia, de unas 24\,000 veces, es coherente con el coste $O(V+E)$: el grafo completo tiene unas 2\,000 veces más actores y unas 10\,000 veces más relaciones, y además, probablemente, un grafo grande aprovecha peor la memoria caché del procesador.
+
+\textbf{Construcción frente a consultas.} Leer los ficheros y construir el grafo cuesta en total menos de 10 segundos y se hace una sola vez, mientras que en un minuto se responden miles de consultas. Esto confirma que compensa construir el grafo antes de consultar, en lugar de recorrer las listas de películas y actores en cada llamada.
+
+\textbf{Posibles mejoras.} Como el recorrido visita gran parte del grafo, la mejora más prometedora sería una búsqueda bidireccional, que avanza a la vez desde los dos actores y se detiene cuando ambos recorridos se encuentran, explorando muchos menos actores. También se podría evitar crear los vectores auxiliares en cada llamada, aunque su coste, $O(V)$, es pequeño comparado con el del recorrido.
 
 \section{\label{dificultades}Dificultades}
 
-Durante el desarrollo de la práctica 2, hemos ido probando distintas formas de integrarla con la práctica 1, pues era un objetivo que ya teníamos en mente desde el principio.
-
-En un primer momento antes de implementar el método \texttt{merge}, procedíamos a volcar la información leída de los ficheros a un hashmap, ordenarlo y posteriormente lo volcábamos a una \texttt{OrderedDoubleLinkedList}, como es de suponer, la velocidad de insertar elementos ordenados en una lista ordenada es O(1) siempre que compares previamente el elemento a insertar con el first y con el prev.
-
-Más tarde, tuvimos un método merge no cuadrático, y fue cuando empezamos a tener pequeñas listas sacadas una de cada fichero de año, las cuales obteníamos aun mediante hashmap, pero que las volcábamos a OrderedDoubleLinkedList para luego proceder a mergearlas en una única lista OrderedDoubleLinkedList, en este momento fue cuando el programa pasó de tardar de 12 minutos a 70 segundos en procesar la lista completa de actores y películas.
-
-Una vez llegados a este punto en el que el programa tardaba \textquotedblleft solo\textquotedblright{} 70 segundos, y lo comentábamos contentos pues sabíamos de donde veníamos, empezamos una pequeña competición por hacer un merge decente.
-
-Mientras unos estaban con el merge, otros estaban dilucidando como reducir esos 70 segundos con los que en ese momento estábamos contentos, por lo que empezamos a pensar en hacer merge de listas más pequeñas a medida que leíamos de cada fichero.
-
-En un principio pensamos que cada 1000 elementos podíamos hacer un merge por lo que modificamos el lector para que cuando llevase X elementos mergease lo leído a una \texttt{OrderedDoubleLinkedList} de los datos de ese año, para una vez finalizado el fichero de año, mergearlo con la \texttt{OrderedDoubleLinkedList} global.
-
-Ya que teníamos un número, decidimos empezar a variarlo y comprobar como respondía el código, para nuestra sorpresa, el número bueno no era mil elementos, sino 128, y es en ese punto donde descubrimos que se realizaban el menor número de operaciones \texttt{compareTo} en nuestro código.
-
-Ni que decir que cuanto más aproximábamos el número de lotes a 128 más rápido se procesaba el código, las últimas pruebas ya fueron para ajustar milésimas, es cuando habíamos llegado a menos de 3 segundos.
-
-
-\begin{table}[ht]
-\section{\label{tablaTiemposComparacionesMerge}Tiempos y comparaciones del merge elegido}
-\begin{minipage}{0.95\linewidth}
-  Dado que mergePruebas realizaba siempre más operaciones se optó por descartarlo y usar mergeEficaz, el cual fue renombrado a merge.
-
-\centering
-\begin{tabular}{>{\ttfamily}l l l l l}
-\toprule
-\normalfont Tipo de lectura & Tipo de Merge & Tamaño lote & Tiempo (ms) & Comparaciones \\
-\midrule
-LinkedList & eficaz & 0100 & 3008 & 84505092\\
-LinkedList & eficaz & 0101 & 2972 & 84382285\\
-LinkedList & eficaz & 0102 & 2990 & 84233346\\
-LinkedList & eficaz & 0103 & 3005 & 84050349\\
-LinkedList & eficaz & 0104 & 2960 & 83982697\\
-LinkedList & eficaz & 0105 & 2993 & 83796540\\
-LinkedList & eficaz & 0106 & 2998 & 83708411\\
-LinkedList & eficaz & 0107 & 2958 & 83577457\\
-LinkedList & eficaz & 0108 & 3004 & 83476276\\
-LinkedList & eficaz & 0109 & 2907 & 83377290\\
-LinkedList & eficaz & 0110 & 3019 & 83296420\\
-LinkedList & eficaz & 0111 & 3028 & 83179341\\
-LinkedList & eficaz & 0112 & 3014 & 83155664\\
-LinkedList & eficaz & 0113 & 3033 & 83048387\\
-LinkedList & eficaz & 0114 & 2918 & 82956969\\
-LinkedList & eficaz & 0115 & 3001 & 82927237\\
-LinkedList & eficaz & 0116 & 2975 & 82840151\\
-LinkedList & eficaz & 0117 & 3174 & 82862973\\
-LinkedList & eficaz & 0118 & 3061 & 82731382\\
-LinkedList & eficaz & 0119 & 2852 & 82737519\\
-LinkedList & eficaz & 0120 & 2878 & 82697094\\
-LinkedList & eficaz & 0121 & 2975 & 82718085\\
-LinkedList & eficaz & 0122 & 2890 & 82650588\\
-LinkedList & eficaz & 0123 & 2966 & 82635178\\
-LinkedList & eficaz & 0124 & 2977 & 82638738\\
-LinkedList & eficaz & 0125 & 2918 & 82654824\\
-LinkedList & eficaz & 0126 & 2994 & 82634253\\
-LinkedList & eficaz & 0127 & 2940 & 82600991\\
-LinkedList & eficaz & 0128 & 2900 & 82594718\\
-LinkedList & eficaz & 0129 & 2972 & 82656716\\
-LinkedList & eficaz & 0130 & 2968 & 82667334\\
-LinkedList & eficaz & 0131 & 3009 & 82604169\\
-LinkedList & eficaz & 0132 & 3019 & 82652078\\
-LinkedList & eficaz & 0133 & 2939 & 82702540\\
-LinkedList & eficaz & 0134 & 3000 & 82766518\\
-LinkedList & eficaz & 0135 & 2943 & 82778629\\
-LinkedList & eficaz & 0136 & 2950 & 82816234\\
-LinkedList & eficaz & 0137 & 2939 & 82837771\\
-LinkedList & eficaz & 0138 & 2874 & 82834454\\
-LinkedList & eficaz & 0139 & 2910 & 82945814\\
-LinkedList & eficaz & 0140 & 2925 & 82985020\\
-
-\bottomrule
-\end{tabular}
-\caption{Número de operaciones por tamaños de lotes y tiempo de operación en (ms) del merge elegido.}
-\end{minipage}\smallskip
-\end{table}
-
-
-\begin{table}[ht]
-\section{\label{tablaTiemposComparacionesOtrosMerge}Tiempos y comparaciones de otros merges}
-\begin{minipage}{0.95\linewidth}
-  Dado que mergePruebas realizaba siempre más operaciones se optó por descartarlo y usar mergeEficaz, el cual fue renombrado a merge.
-
-\centering
-\begin{tabular}{>{\ttfamily}l l l l l}
-\toprule
-\normalfont Tipo de lectura & Tipo de Merge & Tamaño lote & Tiempo (ms) & Comparaciones \\
-\midrule
-HashMap & eficaz & 0000 & 4211 & 30.948.898\\
-HashMap & eficaz & 0000 & 4249 & 30.948.898\\
-HashMap & eficaz & 0000 & 4268 & 30.948.898\\
-HashMap & eficaz & 0000 & 4275 & 30.948.898\\
-\midrule
-HashMap & pruebas & 0000 & 4121 & 42.431.698\\
-HashMap & pruebas & 0000 & 4186 & 42.431.698\\
-\midrule
-LinkedList & pruebas & 0000 & 75663 & 2.359.061.629\\
-LinkedList & pruebas & 0000 & 78484 & 2.359.061.629\\
-LinkedList & pruebas & 0100 & 6804 & 198.922.278\\
-LinkedList & pruebas & 0250 & 5600 & 160.686.346\\
-LinkedList & pruebas & 0500 & 6148 & 199.115.873\\
-LinkedList & pruebas & 1000 & 8053 & 304.985.577\\
-LinkedList & pruebas & 2000 & 12932 & 505.847.776\\
-\bottomrule
-\end{tabular}
-\caption{Número de operaciones por tamaños de lotes y tiempo de operación en (ms) de otros merges.}
-\end{minipage}\smallskip
-\end{table}
+\begin{itemize}
+    \item \textbf{Firma de la parte opcional.} El enunciado da el mismo nombre y los mismos parámetros a la operación obligatoria y a la opcional, algo que Java no permite. Lo resolvimos con dos métodos, \texttt{estanConectadosBoolean} y \texttt{estanConectados}.
+    \item \textbf{Reconstruir el camino.} Detectar la conexión es directo con la cola, pero para devolver la cadena hubo que guardar desde qué actor se descubre cada uno (\texttt{padre}) y recorrerlo al revés, invirtiendo después la lista.
+    \item \textbf{Actores inexistentes.} En la primera versión, consultar un actor que no estaba en el grafo provocaba una \texttt{NullPointerException} al convertir el \texttt{null} de \texttt{th.get} a \texttt{int}. Lo sustituimos por una \texttt{IllegalArgumentException} con un mensaje que indica qué actor falta.
+    \item \textbf{Relaciones repetidas.} Dos actores que coinciden en varias películas generaban la misma relación varias veces; se evitó con la condición $a < b$ y la comprobación con \texttt{contains}.
+\end{itemize}
 
 \end{document}

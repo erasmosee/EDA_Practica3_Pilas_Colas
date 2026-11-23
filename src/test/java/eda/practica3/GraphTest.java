@@ -1,7 +1,9 @@
 package eda.practica3;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
@@ -29,18 +31,24 @@ public class GraphTest {
         
         grafo.crearGrafo(peliculas);
 
-        assertTrue(grafo.estanConectados("Dani Rovira", "Charlize Theron"));
-        assertTrue(grafo.estanConectados("Dani Rovira", "Florentino Fernández"));
-        assertTrue(grafo.estanConectados("Florentino Fernández", "Charlize Theron"));
-        assertTrue(grafo.estanConectados("Florentino Fernández", "Charlize Theron"));
-        assertFalse(grafo.estanConectados("An So-yo", "Charlize Theron"));
+        assertTrue(grafo.estanConectadosBoolean("Karra Elejalde", "Charlize Theron"));
+        assertTrue(grafo.estanConectadosBoolean("Karra Elejalde", "Florentino Fernández"));
+        assertTrue(grafo.estanConectadosBoolean("Florentino Fernández", "Charlize Theron"));
+        assertTrue(grafo.estanConectadosBoolean("Charlize Theron", "Karra Elejalde"));
+        assertFalse(grafo.estanConectadosBoolean("An So-yo", "Charlize Theron"));
+
+        // El camino empieza y termina en los actores pedidos.
+        ArrayList<String> camino = grafo.estanConectados("Karra Elejalde", "Charlize Theron");
+        assertEquals("Karra Elejalde", camino.get(0));
+        assertEquals("Charlize Theron", camino.get(camino.size() - 1));
+        assertTrue(grafo.estanConectados("An So-yo", "Charlize Theron").isEmpty());
         
-        grafo.print("Dani Rovira","Karra Elejalde", 5);
+        grafo.print("Florentino Fernández","Karra Elejalde", 5);
         grafo.print("Karra Elejalde","Javier Bardem", 5);
-        grafo.print("Dani Rovira","Javier Bardem", 5);
+        grafo.print("Florentino Fernández","Javier Bardem", 5);
 
         grafo.print("Javier Bardem","Charlize Theron", 5);
-        grafo.print("Dani Rovira","Charlize Theron", 5);
+        grafo.print("Karra Elejalde","Charlize Theron", 5);
 
     }
 

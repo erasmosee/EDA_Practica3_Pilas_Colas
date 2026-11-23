@@ -10,22 +10,31 @@ import eda.practica3.procesador.Actor;
 import eda.practica3.procesador.OrderedDoubleLinkedList;
 import eda.practica3.procesador.Pelicula;
 
+/**
+ * Grafo no dirigido de actores/actrices: dos actores estan unidos si han
+ * participado juntos en alguna pelicula.
+ */
 public class Graph {
 
-    // Aqui guardamos el nombre del actor y el numero que le hemos dado.
+    // Nombre del actor -> identificador numerico.
     HashMap<String, Integer> th;
-    // Aqui hacemos lo contrario, con el numero buscamos el nombre.
+    // Identificador numerico -> nombre del actor.
     String[] keys;
-    // Para cada actor guardamos los numeros de los actores con los que ha hecho
-    // alguna pelicula.
-    // Es como la practica de los muelles que hicimos en clase, cada muelle es un
-    // actor y cada contenedor son id's de actores que estan adyacentes.
-    // Es decir tenemos actores como muelles y actores como contenedores
+    // Para cada identificador, los identificadores de los actores con los que
+    // ha compartido alguna pelicula (sin repetidos).
     ArrayList<Integer>[] adjList;
 
+    /**
+     * <b>O(sum(k_p^2) * g)</b>: k_p actores de la pelicula p y g el grado
+     * maximo del grafo (coste de contains).
+     *
+     * Pre: peliculas no es null y cada pelicula tiene su lista de actores.
+     * Post: th, keys y adjList describen el grafo; adjList[i] no tiene
+     * repetidos ni contiene a i, y la relacion es simetrica.
+     *
+     * @param peliculas peliculas de las que se extraen las relaciones
+     */
     public void crearGrafo(OrderedDoubleLinkedList<Pelicula> peliculas) {
-        // Post: crea el grafo desde la lista de peliculas
-        // Los nodos son nombres de actores/actrices
 
         // Paso 1: llenar “th”
         // Si sale en mas peliculas no le damos otro numero.
@@ -49,13 +58,9 @@ public class Graph {
             keys[th.get(k)] = k;
         }
 
-        // Paso 3: llenar “adjList”
-        // Os acordais cuando arriba he hablado de muelles, pues aqui estamos indicando
-        // el numero de actores(cuando funcionan como muelles)
+        // Paso 3: llenar “adjList” con una lista vacia por actor.
         adjList = new ArrayList[th.size()];
         for (int i = 0; i < adjList.length; i++) {
-            // Ahora al actor(muelle) creamos lo que va a ser el muelle en si, donde van a
-            // alojarse los actores(contenedores)
             adjList[i] = new ArrayList<>();
         }
 
@@ -73,7 +78,6 @@ public class Graph {
                     // Asi no repetimos la misma pareja.
                     if (a < b) {
                         if (!adjList[a].contains(b)) {
-                            // Si no se conocian los presentamos
                             adjList[a].add(b);
                             adjList[b].add(a);
                         }
@@ -83,6 +87,10 @@ public class Graph {
         }
     }
 
+    /**
+     * <b>O(V + E)</b>: muestra cada actor con los actores con los que ha
+     * compartido pelicula.
+     */
     public void print() {
         // Mostramos cada actor y con quien esta conectado.
         for (int i = 0; i < adjList.length; i++) {
@@ -94,11 +102,20 @@ public class Graph {
         }
     }
 
+    /**
+     * <b>O(V + E)</b>: muestra el numero de relaciones que separan a nombre de
+     * destino si es menor o igual que profundidad.
+     *
+     * Pre: el grafo esta creado.
+     * Post: muestra la distancia (0 si son el mismo actor); si no se alcanza
+     * con esa profundidad o algun actor no existe, lo indica.
+     */
     public void print(String nombre, String destino, int profundidad) {
         Integer inicio = th.get(nombre);
+        Integer fin = th.get(destino);
 
-        if (inicio == null) {
-            System.out.println("No se encuentra el actor: " + nombre);
+        if (inicio == null || fin == null) {
+            System.out.println("No se encuentra el actor: " + (inicio == null ? nombre : destino));
             return;
         }
         if (profundidad < 0) {
@@ -114,8 +131,9 @@ public class Graph {
 
         while (!porExaminar.isEmpty()) {
             int actual = porExaminar.remove();
-            if (destino.equals(keys[actual])) {
-                System.out.println(nombre + " esta a una distancia " + (distancia[actual] - 1) + " de " + keys[actual]);
+            if (actual == fin) {
+                System.out.println(nombre + " esta a una distancia " + distancia[actual] + " de " + destino);
+                return;
             }
             if (distancia[actual] < profundidad) {
                 for (int vecino : adjList[actual]) {
@@ -127,16 +145,41 @@ public class Graph {
                 }
             }
         }
+        System.out.println(nombre + " no esta a una distancia <= " + profundidad + " de " + destino);
     }
 
+    /**
+     * <b>O(1)</b> en media: identificador numerico de un actor.
+     *
+     * @throws IllegalArgumentException si el actor no esta en el grafo
+     */
+    private int identificador(String nombre) {
+        Integer id = th.get(nombre);
+        if (id == null) {
+            throw new IllegalArgumentException("No se encuentra el actor: " + nombre);
+        }
+        return id;
+    }
+
+    /**
+     * <b>O(V + E)</b> (parte opcional): recorrido en anchura que devuelve la
+     * cadena de relaciones entre a1 y a2.
+     *
+     * Pre: el grafo esta creado.
+     * Post: lista a1, ..., a2 de longitud minima en la que cada par consecutivo
+     * ha compartido pelicula; vacia si no hay conexion; un solo elemento si
+     * a1 es a2.
+     *
+     * @throws IllegalArgumentException si algun actor no esta en el grafo
+     */
     public ArrayList<String> estanConectados(String a1, String a2) {
         // Usamos una cola para ir revisando los actores pendientes.
         Queue<Integer> porExaminar = new LinkedList<>();
-        int padre[]= new int[th.size()] ;
+        int[] padre = new int[th.size()];
         // Buscamos los numeros que tienen los dos actores.
-        int pos1 = th.get(a1);
-        int pos2 = th.get(a2);
-        ArrayList<String> camino = new ArrayList();
+        int pos1 = identificador(a1);
+        int pos2 = identificador(a2);
+        ArrayList<String> camino = new ArrayList<>();
         boolean enc;
         // Aqui marcamos los actores que ya hemos revisado.
         boolean[] examinados = new boolean[th.size()];
@@ -155,7 +198,7 @@ public class Graph {
             for (int vecino : adjList[actual]) {
                 if (vecino == pos2) {
                     enc = true;
-                    padre[vecino]= actual;
+                    padre[vecino] = actual;
                     break;
                 }
 
@@ -163,34 +206,41 @@ public class Graph {
                     // Lo marcamos para no volver a revisarlo y lo ponemos en la cola.
                     examinados[vecino] = true;
                     porExaminar.add(vecino);
-                    padre[vecino]= actual;
-                    
+                    padre[vecino] = actual;
                 }
             }
         }
-        if (enc){
-        	
-
-        	int paso = pos2;
-        	camino.add(keys[paso]);
-        	 while (paso!=pos1) {
-        		paso = padre[paso];
-        		camino.add(keys[paso]);
-        	 }
-        	 Collections.reverse(camino);
+        if (enc) {
+            // Reconstruimos el camino desde el destino siguiendo padre.
+            int paso = pos2;
+            camino.add(keys[paso]);
+            while (paso != pos1) {
+                paso = padre[paso];
+                camino.add(keys[paso]);
+            }
+            Collections.reverse(camino);
         }
-        // Devolvemos si hemos encontrado un camino entre los dos.
         return camino;
 
     }
 
+    /**
+     * <b>O(V + E)</b>: recorrido en anchura que indica si hay una cadena de
+     * relaciones entre a1 y a2.
+     *
+     * Pre: el grafo esta creado.
+     * Post: true si y solo si hay camino; un actor esta conectado consigo
+     * mismo.
+     *
+     * @throws IllegalArgumentException si algun actor no esta en el grafo
+     */
     public boolean estanConectadosBoolean(String a1, String a2) {
         // Usamos una cola para ir revisando los actores pendientes.
         Queue<Integer> porExaminar = new LinkedList<>();
 
         // Buscamos los numeros que tienen los dos actores.
-        int pos1 = th.get(a1);
-        int pos2 = th.get(a2);
+        int pos1 = identificador(a1);
+        int pos2 = identificador(a2);
         boolean enc;
         // Aqui marcamos los actores que ya hemos revisado.
         boolean[] examinados = new boolean[th.size()];
